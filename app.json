@@ -57,7 +57,8 @@
       "expo-apple-authentication",
       "expo-font",
       "expo-audio",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true,
