@@ -37,7 +37,7 @@ function TaskInput({ onAdd }: TaskInputProps) {
   const hasText = text.trim().length > 0;
 
   return (
-    <View className="w-full h-[54px] relative">
+    <View className="w-full relative" style={{ height: 54 }}>
       {/* Animated focus glow ring */}
       <Animated.View
         pointerEvents="none"
@@ -60,41 +60,51 @@ function TaskInput({ onAdd }: TaskInputProps) {
         ]}
       />
 
-      {/* Text input */}
-      <TextInput
-        ref={inputRef}
-        value={text}
-        onChangeText={setText}
-        onSubmitEditing={submit}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        placeholder="Add a task to crush..."
-        placeholderTextColor={COLORS.mutedForeground}
-        className="absolute inset-0 rounded-lg border border-border bg-card text-foreground pl-4 pr-[58px] font-sans text-[15px] z-[1]"
-        returnKeyType="done"
-      />
-
-      {/* Add button — inside the input, absolutely positioned */}
-      <Pressable
-        onPress={submit}
-        disabled={!hasText}
-        className={`absolute right-2 top-2 w-[38px] h-[38px] rounded-md items-center justify-center z-[2] ${
-          hasText ? "bg-neon-cyan" : "bg-card-elevated border border-border"
-        }`}
-        style={({ pressed }) => ({
-          shadowColor: hasText ? COLORS.neonCyan : undefined,
-          shadowOpacity: hasText ? 0.5 : 0,
-          shadowRadius: hasText ? 8 : 0,
-          shadowOffset: { width: 0, height: 0 },
-          transform: pressed ? [{ scale: 0.9 }] : [],
-        })}
+      {/* Row: input + button, both centred via flexbox */}
+      <View
+        className="absolute inset-0 flex-row items-center rounded-lg border border-border bg-card px-3 z-[1]"
+        style={{ gap: 8 }}
       >
-        <Plus
-          color={hasText ? "#071018" : COLORS.mutedForeground}
-          size={20}
-          strokeWidth={2.8}
+        <TextInput
+          ref={inputRef}
+          value={text}
+          onChangeText={setText}
+          onSubmitEditing={submit}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          placeholder="Add a task to crush..."
+          placeholderTextColor={COLORS.mutedForeground}
+          returnKeyType="done"
+          className="flex-1 text-foreground font-sans text-[15px]"
+          style={{
+            height: 38,
+            paddingVertical: 0,     // removes iOS default internal padding
+            textAlignVertical: "center",
+            includeFontPadding: false,
+          }}
         />
-      </Pressable>
+
+        <Pressable
+          onPress={submit}
+          disabled={!hasText}
+          className={`w-[38px] h-[38px] rounded-md items-center justify-center ${
+            hasText ? "bg-neon-cyan" : "bg-card-elevated border border-border"
+          }`}
+          style={({ pressed }) => ({
+            shadowColor: hasText ? COLORS.neonCyan : undefined,
+            shadowOpacity: hasText ? 0.5 : 0,
+            shadowRadius: hasText ? 8 : 0,
+            shadowOffset: { width: 0, height: 0 },
+            transform: pressed ? [{ scale: 0.9 }] : [],
+          })}
+        >
+          <Plus
+            color={hasText ? "#071018" : COLORS.mutedForeground}
+            size={20}
+            strokeWidth={2.8}
+          />
+        </Pressable>
+      </View>
     </View>
   );
 }

@@ -100,7 +100,7 @@ function TaskList({ tasks, activeTaskId, onStart, onDelete }: TaskListProps) {
               </Pressable>
 
               <View
-                className={`flex-row items-center gap-[3px] px-[9px] py-[5px] rounded-full border ${
+                className={`flex-row items-center gap-[3px] px-[9px] py-2 rounded-full border ${
                   active ? "bg-[#061522]" : "bg-[#0d1829] border-border"
                 }`}
                 style={active ? { borderColor: COLORS.neonCyan + "50" } : undefined}
@@ -125,8 +125,8 @@ function TaskList({ tasks, activeTaskId, onStart, onDelete }: TaskListProps) {
       {done.length > 0 && (
         <View className="pt-1 gap-[6px]">
           <View className="flex-row items-center gap-[5px] px-[2px] pb-[2px]">
-            <CheckCircle2 size={11} color={COLORS.success} />
-            <Text className="text-success font-display text-[10px] tracking-[2px]">
+            <CheckCircle2 size={16} color={COLORS.success} />
+            <Text className="text-success font-display text-[12px] tracking-[2px]">
               CRUSHED ({done.length})
             </Text>
           </View>
@@ -136,7 +136,7 @@ function TaskList({ tasks, activeTaskId, onStart, onDelete }: TaskListProps) {
               className="flex-row items-center gap-[10px] px-[14px] py-[11px] rounded-lg bg-[#0c2117] border"
               style={{ width: CARD_W, borderColor: COLORS.success + "28" }}
             >
-              <CheckCircle2 size={14} color={COLORS.success} />
+              <CheckCircle2 size={20} color={COLORS.success} />
               <Text
                 className="flex-1 text-muted-foreground font-sans text-[14px] line-through"
                 numberOfLines={1}
@@ -151,7 +151,7 @@ function TaskList({ tasks, activeTaskId, onStart, onDelete }: TaskListProps) {
                 hitSlop={10}
                 className="p-1"
               >
-                <Trash2 size={13} color={COLORS.mutedForeground} />
+                <Trash2 size={16} color={COLORS.mutedForeground} />
               </Pressable>
             </View>
           ))}

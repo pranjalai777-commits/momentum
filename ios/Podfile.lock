@@ -206,7 +206,7 @@ PODS:
     - Yoga
   - ExpoAppleAuthentication (8.0.8):
     - ExpoModulesCore
-  - ExpoAsset (55.0.9):
+  - ExpoAsset (12.0.12):
     - ExpoModulesCore
   - ExpoAudio (1.1.1):
     - ExpoModulesCore
@@ -218,9 +218,6 @@ PODS:
     - ExpoModulesCore
   - ExpoFont (14.0.11):
     - ExpoModulesCore
-  - ExpoGL (16.0.10):
-    - ExpoModulesCore
-    - ReactCommon/turbomodule/core
   - ExpoGlassEffect (0.1.9):
     - ExpoModulesCore
   - ExpoHaptics (15.0.8):
@@ -2331,7 +2328,6 @@ DEPENDENCIES:
   - ExpoDevice (from `../node_modules/expo-device/ios`)
   - ExpoFileSystem (from `../node_modules/expo-file-system/ios`)
   - ExpoFont (from `../node_modules/expo-font/ios`)
-  - ExpoGL (from `../node_modules/expo-gl`)
   - ExpoGlassEffect (from `../node_modules/expo-glass-effect/ios`)
   - ExpoHaptics (from `../node_modules/expo-haptics/ios`)
   - ExpoHead (from `../node_modules/expo-router/ios`)
@@ -2469,8 +2465,6 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-file-system/ios"
   ExpoFont:
     :path: "../node_modules/expo-font/ios"
-  ExpoGL:
-    :path: "../node_modules/expo-gl"
   ExpoGlassEffect:
     :path: "../node_modules/expo-glass-effect/ios"
   ExpoHaptics:
@@ -2663,13 +2657,12 @@ SPEC CHECKSUMS:
   expo-dev-menu: ea4fb803ace52e60d7cd8060c7cd379612a140b2
   expo-dev-menu-interface: 600df12ea01efecdd822daaf13cc0ac091775533
   ExpoAppleAuthentication: 31bb6cdc57d7169e5d994fff7ec4b97c62423534
-  ExpoAsset: ee2489d3eb226584a017ae3667911bd2ad0e9a8d
+  ExpoAsset: d999f3bbd998a750f3b74cb913229848901b926b
   ExpoAudio: 12dd2d82554f4228008ca64851d7064ad9f47533
   ExpoCrypto: 4d23a9ff67c25e2ed23ca792d81e58817a7ea1b9
   ExpoDevice: 0773c782b055558ca9b40b74aa4a8133a66cd0d2
   ExpoFileSystem: aefcd337b94b874f88752ebefc52813b84992fad
   ExpoFont: c625dbd97ed57e9089b172b2a7bb99003d074664
-  ExpoGL: b1036f8b2ae216ffedd544ca75f27055cf9a8a51
   ExpoGlassEffect: 179b8eb7a6f4c9aeb6eb15c62897dde730ea94f1
   ExpoHaptics: 7240781406f4563c3f4eb1e72864302a8c643fd0
   ExpoHead: 3f6ed6cbda48f13bcaddae98f8e5dc525dcfb34f

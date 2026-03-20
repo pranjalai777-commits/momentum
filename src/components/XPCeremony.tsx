@@ -118,7 +118,6 @@ function XPCeremony({
   completionType,
   onFinish,
 }: XPCeremonyProps) {
-  console.log("[🔬CEREMONY] XPCeremony render — xp:", xp, "prevXp:", prevXp, "xpGained:", xpGained, "leveledUp:", leveledUp, "type:", completionType);
   const [displayXp, setDisplayXp] = useState(prevXp);
   const [phase, setPhase] = useState<"enter" | "charge" | "fill" | "burst" | "exit">("enter");
   const xpIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -173,10 +172,6 @@ function XPCeremony({
     width: `${Math.max(0, Math.min(progressWidth.value, 100))}%`,
   }));
 
-  useEffect(() => {
-    console.log("[🔬CEREMONY] XPCeremony MOUNTED");
-    return () => console.log("[🔬CEREMONY] XPCeremony UNMOUNTED");
-  }, []);
 
   useEffect(() => {
     cardFloat.value = withRepeat(
@@ -192,7 +187,6 @@ function XPCeremony({
   }, [cardFloat, glowPulse, isEpic]);
 
   useEffect(() => {
-    console.log("[🔬CEREMONY] phase-sequence effect mounted — leveledUp:", leveledUp, "isEpic:", isEpic);
     const timers: ReturnType<typeof setTimeout>[] = [];
     const FILL_START_MS = 1080;
     const burstDuration = leveledUp ? 1750 : 1050;
@@ -200,27 +194,27 @@ function XPCeremony({
     const onFinishMs = burstStartMs + burstDuration + (leveledUp ? 600 : 500);
     timers.push(
       setTimeout(() => {
-        console.log("[🔬CEREMONY] phase → charge");
         setPhase("charge");
         cardScale.value = withTiming(1.02, { duration: 420, easing: Easing.out(Easing.cubic) });
       }, 520)
     );
-    timers.push(setTimeout(() => { console.log("[🔬CEREMONY] phase → fill"); setPhase("fill"); }, FILL_START_MS));
+    timers.push(setTimeout(() => { setPhase("fill"); }, FILL_START_MS));
     timers.push(
       setTimeout(() => {
-        console.log("[🔬CEREMONY] phase → burst");
         setPhase("burst");
-        cardScale.value = withTiming(1.12, { duration: 380, easing: Easing.out(Easing.exp) });
+        cardScale.value = withSequence(
+          withTiming(1.06, { duration: 180, easing: Easing.out(Easing.exp) }),
+          withTiming(1.0, { duration: 320, easing: Easing.out(Easing.cubic) })
+        );
         if (leveledUp || isEpic) {
           playLevelUp();
           hapticLevelUp();
         }
-        timers.push(setTimeout(() => { console.log("[🔬CEREMONY] phase → exit"); setPhase("exit"); }, burstDuration));
+        timers.push(setTimeout(() => { setPhase("exit"); }, burstDuration));
       }, burstStartMs)
     );
-    timers.push(setTimeout(() => { console.log("[🔬CEREMONY] onFinish timeout fired"); onFinishRef.current(); }, onFinishMs));
+    timers.push(setTimeout(() => { onFinishRef.current(); }, onFinishMs));
     return () => {
-      console.log("[🔬CEREMONY] phase-sequence effect CLEANUP (unmount or deps changed)");
       timers.forEach(clearTimeout);
       if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);
     };
@@ -270,7 +264,7 @@ function XPCeremony({
 
   useEffect(() => {
     if (phase === "exit") {
-      cardScale.value = withTiming(0.97, { duration: 480, easing: Easing.inOut(Easing.quad) });
+      cardScale.value = withTiming(0.88, { duration: 420, easing: Easing.in(Easing.cubic) });
     }
   }, [cardScale, phase]);
 
@@ -300,8 +294,8 @@ function XPCeremony({
 
       <MotiView
         from={{ opacity: 0.28, scale: 0.9 }}
-        animate={{ opacity: phase === "exit" ? 0 : 0.65, scale: phase === "burst" ? 1.26 : 1.04 }}
-        transition={{ type: "timing", duration: phase === "burst" ? 720 : 1800 }}
+        animate={{ opacity: phase === "exit" ? 0 : 0.65, scale: phase === "exit" ? 1.04 : phase === "burst" ? 1.26 : 1.04 }}
+        transition={{ type: "timing", duration: phase === "exit" ? 320 : phase === "burst" ? 720 : 1800 }}
         style={{
           position: "absolute",
           width: 580,
@@ -314,8 +308,8 @@ function XPCeremony({
 
       <MotiView
         from={{ opacity: 0.15, scale: 0.7 }}
-        animate={{ opacity: phase === "exit" ? 0 : phase === "burst" ? 0.52 : 0.24, scale: phase === "burst" ? 1.5 : 1.04 }}
-        transition={{ type: "timing", duration: phase === "burst" ? 560 : 1900 }}
+        animate={{ opacity: phase === "exit" ? 0 : phase === "burst" ? 0.52 : 0.24, scale: phase === "exit" ? 1.04 : phase === "burst" ? 1.5 : 1.04 }}
+        transition={{ type: "timing", duration: phase === "exit" ? 320 : phase === "burst" ? 560 : 1900 }}
         style={{
           position: "absolute",
           width: 760,
@@ -334,10 +328,10 @@ function XPCeremony({
             animate={{ opacity: phase === "exit" ? 0 : 0.95, translateY: -26, scale: 1.25 }}
             transition={{
               type: "timing",
-              duration: particle.duration,
-              delay: particle.delay,
-              loop: true,
-              repeatReverse: true,
+              duration: phase === "exit" ? 180 : particle.duration,
+              delay: phase === "exit" ? 0 : particle.delay,
+              loop: phase !== "exit",
+              repeatReverse: phase !== "exit",
             }}
             style={{
               position: "absolute",
@@ -360,9 +354,9 @@ function XPCeremony({
             animate={{ opacity: phase === "exit" ? 0 : 0.82, rotate: particle.reverse ? "-360deg" : "360deg" }}
             transition={{
               type: "timing",
-              duration: particle.duration,
-              delay: particle.delay,
-              loop: true,
+              duration: phase === "exit" ? 180 : particle.duration,
+              delay: phase === "exit" ? 0 : particle.delay,
+              loop: phase !== "exit",
             }}
             style={{ position: "absolute", width: 1, height: 1 }}
           >
@@ -401,8 +395,8 @@ function XPCeremony({
               }}
               transition={{
                 type: "timing",
-                duration: particle.duration,
-                delay: particle.delay,
+                duration: phase === "exit" ? 150 : particle.duration,
+                delay: phase === "exit" ? 0 : particle.delay,
               }}
               style={{
                 position: "absolute",
@@ -420,10 +414,10 @@ function XPCeremony({
         from={{ opacity: 0, scale: 0.96, translateY: 18 }}
         animate={{
           opacity: phase === "exit" ? 0 : 1,
-          scale: phase === "burst" ? (leveledUp ? 1.07 : 1.04) : 1,
-          translateY: 0,
+          scale: phase === "burst" ? (leveledUp ? 1.04 : 1.02) : 1,
+          translateY: phase === "exit" ? 16 : 0,
         }}
-        transition={{ type: "timing", duration: 350 }}
+        transition={{ type: "timing", duration: phase === "exit" ? 400 : 350 }}
       >
         <Animated.View style={cardAnimatedStyle}>
           <View
@@ -442,8 +436,6 @@ function XPCeremony({
                 shadowRadius: phase === "burst" ? 32 : 24,
                 shadowOffset: { width: 0, height: 0 },
               }}
-              shouldRasterizeIOS
-              renderToHardwareTextureAndroid
             >
             <View className="items-center gap-1">
               <Text className="text-[40px]">{msg.emoji}</Text>
@@ -454,21 +446,18 @@ function XPCeremony({
                 {msg.title}
               </Text>
               <Text className="text-muted-foreground font-sans text-[13px] text-center">{msg.subtitle}</Text>
-              {isEpic ? (
+              {/* {isEpic ? (
                 <View
                   className="mt-1 px-3 py-[5px] rounded-full border"
                   style={{ borderColor: COLORS.success + "55", backgroundColor: COLORS.successDark }}
                 >
                   <Text className="text-success font-display text-[11px] tracking-[1px]">⚡ EARLY FINISH BONUS</Text>
                 </View>
-              ) : null}
+              ) : null} */}
             </View>
 
-            <View className="items-center gap-2">
-              <MotiView
-                from={{ scale: 0.86 }}
-                animate={{ scale: phase === "burst" ? 1.2 : 1 }}
-                transition={{ type: "timing", duration: 320 }}
+            <View className="items-center gap-2" style={{ width: "100%" }}>
+              <View
                 style={[
                   {
                     width: 90,
@@ -492,14 +481,15 @@ function XPCeremony({
                 <Text className="font-display text-[36px]" style={{ color: isEpic ? EPIC_GOLD : COLORS.neonCyan }}>
                   {shownLevel}
                 </Text>
-              </MotiView>
-              <Text className="text-muted-foreground font-display text-[11px] tracking-[1.4px]">{title}</Text>
+              </View>
+              <Text className="text-muted-foreground font-display text-[11px] tracking-[1.4px]" style={{ textAlign: "center" }}>{title}</Text>
               {leveledUp && phase === "burst" ? (
                 <MotiView
                   from={{ opacity: 0, scale: 0.76, translateY: 8 }}
                   animate={{ opacity: 1, scale: 1, translateY: 0 }}
                   transition={{ type: "spring", damping: 11, stiffness: 170 }}
                   style={{
+                    alignSelf: "center",
                     paddingHorizontal: 14,
                     paddingVertical: 6,
                     borderRadius: 9999,
@@ -512,7 +502,7 @@ function XPCeremony({
                     <TrendingUp size={16} color={isEpic ? EPIC_GOLD : COLORS.neonCyan} strokeWidth={2.5} />
                     <Text
                       className="font-display text-[16px] tracking-[1px]"
-                      style={{ color: isEpic ? EPIC_GOLD : COLORS.neonCyan }}
+                      style={{ color: isEpic ? EPIC_GOLD : COLORS.neonCyan, lineHeight: 20, includeFontPadding: false }}
                     >
                       LEVEL UP!
                     </Text>

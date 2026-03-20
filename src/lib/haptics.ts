@@ -126,3 +126,7 @@ export function hapticAuthSuccess(): void {
 export function hapticAuthError(): void {
   fire("auth-error", () => Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error), 250);
 }
+
+export function hapticChipTap(): void {
+  fire("auth-tap", () => Haptics.selectionAsync(), 80);
+}

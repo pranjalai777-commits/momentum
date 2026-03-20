@@ -1,4 +1,8 @@
+import TreeModalComponent from "@/components/TreeModal";
 import DailyBannerComponent from "@/components/DailyBanner";
+import ProfileModalComponent from "@/components/ProfileModal";
+import StatsModalComponent from "@/components/StatsModal";
+import StreakModalComponent from "@/components/StreakModal";
 import HeatMeterComponent from "@/components/HeatMeter";
 import StatsBarComponent from "@/components/StatsBar";
 import TaskInputComponent from "@/components/TaskInput";
@@ -11,36 +15,19 @@ import { COLORS, GRADIENTS } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useRemoteMutations } from "@/hooks/useRemoteData";
 import { getMotivationalPrompt, getTreeHealthLabel, isTreeInDanger } from "@/lib/momentum";
+import { hapticChipTap } from "@/lib/haptics";
 import { useGameStore } from "@/store/useGameStore";
 import { useTaskStore } from "@/store/useTaskStore";
 import type { CeremonyState, CompletionType, Task } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { MotiView } from "moti";
+import { MotiView, AnimatePresence } from "moti";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Sparkles } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 
-type AmbientParticle = {
-  left: number;
-  top: number;
-  size: number;
-  duration: number;
-  delay: number;
-  opacity: number;
-};
-
-function createTurboAmbientParticles(count: number): AmbientParticle[] {
-  return Array.from({ length: count }, (_, i) => ({
-    left: 4 + Math.random() * 92,
-    top: 10 + Math.random() * 72,
-    size: 4 + Math.random() * 8,
-    duration: 2600 + Math.random() * 2400,
-    delay: i * 120,
-    opacity: 0.35 + Math.random() * 0.5,
-  }));
-}
 
 function getActionErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -52,6 +39,10 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { isAnonymous } = useAuth();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [streakModalVisible, setStreakModalVisible] = useState(false);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
+  const [statsModalVisible, setStatsModalVisible] = useState(false);
+  const [treeModalVisible, setTreeModalVisible] = useState(false);
   const [prompt, setPrompt] = useState(getMotivationalPrompt());
   const [showSaveProgressPrompt, setShowSaveProgressPrompt] = useState(false);
   const [saveProgressDismissed, setSaveProgressDismissed] = useState(false);
@@ -107,7 +98,6 @@ export default function HomeScreen() {
   const pendingCount = useMemo(() => tasks.filter((t) => !t.completed).length, [tasks]);
   const treeInDanger = useMemo(() => isTreeInDanger(data), [data]);
   const treeHealthLabel = useMemo(() => getTreeHealthLabel(data.treeHealth), [data.treeHealth]);
-  const turboAmbientParticles = useMemo(() => createTurboAmbientParticles(14), []);
 
   const handleAddTask = useCallback(
     async (text: string) => {
@@ -167,6 +157,18 @@ export default function HomeScreen() {
       console.log("[🔬CEREMONY] calling setActiveTask(null)");
       setActiveTask(null);
 
+      // Show ceremony immediately — all data is local, no network needed
+      const prevXp = previousData.xp;
+      console.log("[🔬CEREMONY] calling setCeremony active=true prevXp:", prevXp, "newXp:", prevXp + result.xpEarned);
+      setCeremony({
+        active: true,
+        prevXp,
+        newXp: prevXp + result.xpEarned,
+        xpGained: result.xpEarned,
+        leveledUp: result.leveledUp,
+        completionType: type,
+      });
+
       try {
         console.log("[🔬CEREMONY] awaiting completeTaskRemote...");
         await completeTaskRemote({
@@ -174,22 +176,6 @@ export default function HomeScreen() {
           taskId: activeTask.id,
           completedAt: new Date().toISOString(),
         });
-        console.log("[🔬CEREMONY] completeTaskRemote resolved, scheduling setCeremony in 300ms");
-        const prevXp = previousData.xp;
-        setTimeout(() => {
-          console.log("[🔬CEREMONY] setTimeout fired — calling setCeremony active=true prevXp:", prevXp, "newXp:", prevXp + result.xpEarned);
-          setCeremony((prev) => {
-            console.log("[🔬CEREMONY] setCeremony updater — prev.active:", prev.active, "→ setting active: true");
-            return {
-              active: true,
-              prevXp,
-              newXp: prevXp + result.xpEarned,
-              xpGained: result.xpEarned,
-              leveledUp: result.leveledUp,
-              completionType: type,
-            };
-          });
-        }, 300);
         if (result.leveledUp && result.newLevel === 3 && isAnonymous && !saveProgressDismissed) {
           setPendingSavePrompt(true);
         }
@@ -199,6 +185,8 @@ export default function HomeScreen() {
         setTasks(previousTasks);
         setActiveTask(activeTask);
         setActionError(getActionErrorMessage(error));
+        // Hide ceremony since data was rolled back
+        setCeremony((prev) => ({ ...prev, active: false }));
       }
     },
     [
@@ -237,77 +225,93 @@ export default function HomeScreen() {
       className="flex-1 bg-background px-4 overflow-hidden"
       style={{ paddingTop: insets.top + 4, paddingBottom: insets.bottom + 6 }}
     >
-      <LinearGradient
-        colors={
-          turboActive
-            ? ["rgba(255, 26, 128, 0.20)", "rgba(153, 51, 255, 0.10)", "rgba(6,10,22,0)"]
-            : ["rgba(0, 217, 245, 0.14)", "rgba(136, 51, 255, 0.09)", "rgba(6,10,22,0)"]
-        }
-        className="absolute top-[-80px] left-1/2 w-[480px] h-[260px] rounded-[300px]"
-        style={{ marginLeft: -240 }}
-      />
+      {/* ── Ambient background — always on ── */}
+      <MotiView
+        from={{ opacity: 0.5 }}
+        animate={{ opacity: 1 }}
+        transition={{ type: "timing", duration: 4000, loop: true, repeatReverse: true }}
+        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+      >
+        <Svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
+          <Defs>
+            {/* Cyan — top centre */}
+            <RadialGradient id="n1" cx="50%" cy="0%" r="60%" fx="50%" fy="0%">
+              <Stop offset="0%" stopColor="#00d9f5" stopOpacity={turboActive ? "0" : "0.14"} />
+              <Stop offset="100%" stopColor="#00d9f5" stopOpacity="0" />
+            </RadialGradient>
+            {/* Purple — top centre (both modes) */}
+            <RadialGradient id="n2" cx="50%" cy="2%" r="55%" fx="50%" fy="2%">
+              <Stop offset="0%" stopColor="#8833ff" stopOpacity="0.10" />
+              <Stop offset="100%" stopColor="#8833ff" stopOpacity="0" />
+            </RadialGradient>
+            {/* Cyan — bottom-right (normal only) */}
+            <RadialGradient id="n3" cx="95%" cy="85%" r="40%" fx="95%" fy="85%">
+              <Stop offset="0%" stopColor="#00d9f5" stopOpacity={turboActive ? "0" : "0.07"} />
+              <Stop offset="100%" stopColor="#00d9f5" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#n1)" />
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#n2)" />
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#n3)" />
+        </Svg>
+      </MotiView>
 
+      {/* Second layer — drifts out of phase for depth */}
+      <MotiView
+        from={{ opacity: 0.3 }}
+        animate={{ opacity: 0.75 }}
+        transition={{ type: "timing", duration: 5500, loop: true, repeatReverse: true }}
+        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+      >
+        <Svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
+          <Defs>
+            {/* Purple — mid-left */}
+            <RadialGradient id="n4" cx="0%" cy="55%" r="45%" fx="0%" fy="55%">
+              <Stop offset="0%" stopColor="#7c3aed" stopOpacity={turboActive ? "0" : "0.09"} />
+              <Stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+            </RadialGradient>
+            {/* Cyan — mid-right (normal only) */}
+            <RadialGradient id="n5" cx="100%" cy="40%" r="40%" fx="100%" fy="40%">
+              <Stop offset="0%" stopColor="#00d9f5" stopOpacity={turboActive ? "0" : "0.07"} />
+              <Stop offset="100%" stopColor="#00d9f5" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#n4)" />
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#n5)" />
+        </Svg>
+      </MotiView>
+
+      {/* ── Turbo ambient — only when active ── */}
       {turboActive ? (
-        <View className="absolute inset-0 z-[1] pointer-events-none">
-          <MotiView
-            from={{ opacity: 0.35, scale: 0.9 }}
-            animate={{ opacity: 0.68, scale: 1.08 }}
-            transition={{ type: "timing", duration: 1800, loop: true, repeatReverse: true }}
-            style={{
-              position: "absolute",
-              width: 560,
-              height: 560,
-              borderRadius: 9999,
-              alignSelf: "center",
-              top: -120,
-              backgroundColor: "rgba(255, 26, 128, 0.14)",
-            }}
-          />
-
-          <MotiView
-            from={{ opacity: 0.2, scale: 0.95 }}
-            animate={{ opacity: 0.48, scale: 1.12 }}
-            transition={{ type: "timing", duration: 2200, loop: true, repeatReverse: true }}
-            style={{
-              position: "absolute",
-              width: 700,
-              height: 700,
-              borderRadius: 9999,
-              alignSelf: "center",
-              top: -220,
-              borderWidth: 1,
-              borderColor: "rgba(153, 51, 255, 0.32)",
-            }}
-          />
-
-          {turboAmbientParticles.map((particle, index) => (
-            <MotiView
-              key={`turbo-particle-${index}-${particle.left.toFixed(2)}`}
-              from={{ opacity: 0, translateY: 14, scale: 0.8 }}
-              animate={{ opacity: particle.opacity, translateY: -22, scale: 1.2 }}
-              transition={{
-                type: "timing",
-                duration: particle.duration,
-                delay: particle.delay,
-                loop: true,
-                repeatReverse: true,
-              }}
-              style={{
-                position: "absolute",
-                left: `${particle.left}%`,
-                top: `${particle.top}%`,
-                width: particle.size,
-                height: particle.size,
-                borderRadius: 999,
-                backgroundColor: index % 2 === 0 ? COLORS.turboPink : COLORS.turboPurple,
-                shadowColor: index % 2 === 0 ? COLORS.turboPink : COLORS.turboPurple,
-                shadowOpacity: 0.85,
-                shadowRadius: 12,
-                shadowOffset: { width: 0, height: 0 },
-              }}
-            />
-          ))}
-        </View>
+        <MotiView
+          from={{ opacity: 0.6 }}
+          animate={{ opacity: 1 }}
+          transition={{ type: "timing", duration: 3000, loop: true, repeatReverse: true }}
+          style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none" }}
+        >
+          <Svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
+            <Defs>
+              {/* Purple — top centre */}
+              <RadialGradient id="rg1" cx="50%" cy="0%" r="55%" fx="50%" fy="0%">
+                <Stop offset="0%" stopColor="#9933ff" stopOpacity="0.22" />
+                <Stop offset="100%" stopColor="#9933ff" stopOpacity="0" />
+              </RadialGradient>
+              {/* Pink — bottom-left */}
+              <RadialGradient id="rg2" cx="10%" cy="90%" r="50%" fx="10%" fy="90%">
+                <Stop offset="0%" stopColor="#ff1a80" stopOpacity="0.16" />
+                <Stop offset="100%" stopColor="#ff1a80" stopOpacity="0" />
+              </RadialGradient>
+              {/* Cyan — bottom-right */}
+              <RadialGradient id="rg3" cx="90%" cy="75%" r="45%" fx="90%" fy="75%">
+                <Stop offset="0%" stopColor="#00d9f5" stopOpacity="0.12" />
+                <Stop offset="100%" stopColor="#00d9f5" stopOpacity="0" />
+              </RadialGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#rg1)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#rg2)" />
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#rg3)" />
+          </Svg>
+        </MotiView>
       ) : null}
 
       {showDailyBonus ? (
@@ -335,14 +339,25 @@ export default function HomeScreen() {
         >
           MOMENTUM
         </Text>
-        <Text className="text-muted-foreground font-sans text-[13px] -mt-1">{prompt}</Text>
+          <AnimatePresence exitBeforeEnter>
+            <MotiView
+              key={prompt}
+              from={{ opacity: 0, translateY: 5 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              exit={{ opacity: 0, translateY: -5 }}
+              transition={{ type: "timing", duration: 380 }}
+            >
+              <Text className="text-muted-foreground font-sans text-[13px] -mt-1">{prompt}</Text>
+            </MotiView>
+          </AnimatePresence>
         <DailyBannerComponent
           dailyStreak={data.dailyStreak}
-          onOpenProfile={() => router.push("/(app)/profile")}
-          onOpenStats={() => router.push("/(app)/stats")}
+          onOpenProfile={() => setProfileModalVisible(true)}
+          onOpenStats={() => setStatsModalVisible(true)}
+          onOpenStreak={() => setStreakModalVisible(true)}
         />
         <Pressable
-          onPress={() => router.push("/(app)/tree")}
+          onPress={() => { hapticChipTap(); setTreeModalVisible(true); }}
           className="flex-row items-center gap-[8px] px-[10px] py-[6px] rounded-full border"
           style={{
             borderColor: treeInDanger ? "#f07000aa" : COLORS.border,
@@ -573,6 +588,32 @@ export default function HomeScreen() {
           </MotiView>
         </MotiView>
       ) : null}
+
+      <TreeModalComponent
+        visible={treeModalVisible}
+        onClose={() => setTreeModalVisible(false)}
+      />
+
+      <StreakModalComponent
+        visible={streakModalVisible}
+        onClose={() => setStreakModalVisible(false)}
+        dailyStreak={data.dailyStreak}
+        bestDailyStreak={data.bestDailyStreak}
+        streak={data.streak}
+        bestStreak={data.bestStreak}
+        lastActionAt={data.lastActionTime ? new Date(data.lastActionTime).toISOString() : null}
+      />
+
+      <ProfileModalComponent
+        visible={profileModalVisible}
+        onClose={() => setProfileModalVisible(false)}
+        onUpgradeAccount={() => router.push("/(auth)/email?mode=signup&upgrade=1")}
+      />
+
+      <StatsModalComponent
+        visible={statsModalVisible}
+        onClose={() => setStatsModalVisible(false)}
+      />
     </View>
   );
 }

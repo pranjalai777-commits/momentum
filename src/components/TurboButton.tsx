@@ -33,24 +33,29 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
   const active = isTurboActive(data);
   const canUse = canActivateTurbo(data);
   const [remaining, setRemaining] = useState(() => getTurboRemainingMs(data));
-  const glowOpacity = useSharedValue(0.5);
+  const shimmer = useSharedValue(0);
 
   useEffect(() => {
     if (!active) {
-      glowOpacity.value = 0.5;
+      shimmer.value = 0;
       return;
     }
-    glowOpacity.value = withRepeat(
-      withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }),
+    shimmer.value = withRepeat(
+      withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.quad) }),
       -1,
       true
     );
     const timer = setInterval(() => setRemaining(getTurboRemainingMs(data)), 1000);
     return () => clearInterval(timer);
-  }, [active, data, glowOpacity]);
+  }, [active, data, shimmer]);
 
+  // Shimmer layer: pink→purple fades in/out over the amber→pink base
+  const shimmerLayerStyle = useAnimatedStyle(() => ({
+    opacity: shimmer.value * 0.85,
+  }));
+  // Glow breathes gently in sync (0.35 → 0.50)
   const glowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: glowOpacity.value,
+    shadowOpacity: 0.35 + shimmer.value * 0.15,
   }));
 
   // LinearGradient from expo-linear-gradient is NOT an RN primitive and does not
@@ -66,28 +71,55 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
 
   if (active) {
     return (
+      // Outer shadow matches web: 0 0 15px #FF3377@0.4, gently breathes
       <Animated.View
         style={[
           glowStyle,
           {
             borderRadius: 9999,
-            shadowColor: "#7c3aed",
-            shadowRadius: 18,
+            shadowColor: "#FF3377",
+            shadowRadius: 15,
             shadowOffset: { width: 0, height: 0 },
           },
         ]}
       >
-        <LinearGradient
-          colors={["#22d3ee", "#7c3aed"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={pillStyle}
+        <View
+          style={{
+            overflow: "hidden",
+            borderRadius: 9999,
+            paddingHorizontal: 18,
+            paddingVertical: 10,
+          }}
         >
-          <Zap size={14} color="#ffffff" />
-          <Text className="text-white font-display text-[13px] tracking-[1.2px]">
-            TURBO {formatTime(remaining)}
-          </Text>
-        </LinearGradient>
+          {/* Layer 1 — base: amber → hot-pink (always visible) */}
+          <LinearGradient
+            colors={["#FFC519", "#FF3377"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+          />
+          {/* Layer 2 — shimmer: hot-pink → purple (cross-fades in/out, 2 s) */}
+          <Animated.View
+            style={[
+              shimmerLayerStyle,
+              { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+            ]}
+          >
+            <LinearGradient
+              colors={["#FF3377", "#C34CFF"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ flex: 1 }}
+            />
+          </Animated.View>
+          {/* Content on top */}
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Zap size={14} color="#ffffff" fill="#ffffff" />
+            <Text className="text-white font-display text-[13px] tracking-[1.2px]">
+              TURBO {formatTime(remaining)}
+            </Text>
+          </View>
+        </View>
       </Animated.View>
     );
   }
@@ -111,7 +143,7 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
       style={({ pressed }) => [
         {
           borderRadius: 9999,
-          shadowColor: "#00d9f5",
+          shadowColor: "#f0ad00",
           shadowOpacity: 0.55,
           shadowRadius: 14,
           shadowOffset: { width: 0, height: 0 },
@@ -120,7 +152,7 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
       ]}
     >
       <LinearGradient
-        colors={["#00d9f5", "#0099bb"]}
+        colors={["#f0ad00", "#f07000"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 0 }}
         style={pillStyle}

@@ -47,7 +47,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   setData: (data) => set({ data, turboActive: isTurboActive(data) }),
 
   completeTask: (completionType) => {
-    console.log("[🔬CEREMONY] useGameStore.completeTask called — type:", completionType, "currentXp:", get().data.xp);
     const prev = get().data;
     const isGiveUp = completionType === "gave-up";
     const firstToday = isFirstActionToday(prev);

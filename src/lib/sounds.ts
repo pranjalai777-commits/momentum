@@ -2,6 +2,8 @@ import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from "expo-aud
 
 type SoundKey =
   | "tick"
+  | "tick-115"
+  | "tick-130"
   | "urgent-tick"
   | "success"
   | "epic-success"
@@ -15,6 +17,8 @@ type SoundKey =
 
 const SOURCES: Record<SoundKey, number> = {
   tick: require("../../assets/sounds-v2/tick.wav"),
+  "tick-115": require("../../assets/sounds-v2/tick-115.wav"),
+  "tick-130": require("../../assets/sounds-v2/tick-130.wav"),
   "urgent-tick": require("../../assets/sounds-v2/urgent-tick.wav"),
   success: require("../../assets/sounds-v2/success.wav"),
   "epic-success": require("../../assets/sounds-v2/epic-success.wav"),
@@ -42,7 +46,7 @@ export async function preloadSounds(): Promise<void> {
 
   (Object.keys(SOURCES) as SoundKey[]).forEach((key) => {
     const player = createAudioPlayer(SOURCES[key]);
-    player.volume = 0.35;
+    player.volume = 1.0; // WAV samples encode wireframe's exact gain values; no extra attenuation
     players.set(key, player);
   });
   initialized = true;
@@ -95,7 +99,16 @@ export function unloadSounds(): void {
 }
 
 export function playTick(pitch = 1): void {
-  playSound("tick", pitch);
+  // Use pre-generated files at the exact pitches used during countdown so
+  // setPlaybackRate doesn't shorten the duration (wireframe uses direct
+  // osc.frequency — pitch only, never changes duration).
+  if (Math.abs(pitch - 1.15) < 0.01) {
+    playSound("tick-115");
+  } else if (Math.abs(pitch - 1.30) < 0.01) {
+    playSound("tick-130");
+  } else {
+    playSound("tick", pitch);
+  }
 }
 
 export function playUrgentTick(): void {

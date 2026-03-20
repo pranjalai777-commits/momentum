@@ -38,7 +38,7 @@ export const GRADIENTS = {
   pinkFire: ["#ff1ab3", "#f03000"] as const,
   successGreen: ["#22c97e", "#0ea568"] as const,
   turboActive: ["#9933ff", "#ff1a80"] as const,
-  turboReady: ["#00d9f5", "#0099bb"] as const,
+  turboReady: ["#f0ad00", "#f07000"] as const,
   cardSubtle: ["#111827", "#0d1120"] as const,
   headerGlow: ["rgba(0,217,245,0.18)", "rgba(136,51,255,0.10)", "rgba(6,10,22,0)"] as const,
   headerGlowTurbo: ["rgba(255,26,128,0.22)", "rgba(153,51,255,0.13)", "rgba(6,10,22,0)"] as const,

@@ -21,6 +21,7 @@ import {
 import type { CompletionType, Task } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { CheckCircle2, Clock, X } from "lucide-react-native";
+import { MotiView } from "moti";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
@@ -62,6 +63,7 @@ function TaskTimer({ task, onComplete, onCancel }: TaskTimerProps) {
   const startCountdown = useCallback(() => {
     cleanup();
     setPhase("countdown");
+    playLaunch();
     hapticTimerLaunch();
     startRef.current = Date.now();
     setCount(5);
@@ -91,7 +93,7 @@ function TaskTimer({ task, onComplete, onCancel }: TaskTimerProps) {
         setCount(0);
         setProgress(1);
         setPhase("working");
-        playUrgentTick();
+        playSuccess();
         hapticSuccess();
         return;
       }
@@ -161,7 +163,6 @@ function TaskTimer({ task, onComplete, onCancel }: TaskTimerProps) {
   };
 
   const finalize = (type: CompletionType) => {
-    cleanup();
     const roundedMinutes = Math.max(1, Math.round(totalSeconds / 60));
     onComplete(type, roundedMinutes);
   };
@@ -260,16 +261,24 @@ function TaskTimer({ task, onComplete, onCancel }: TaskTimerProps) {
               transform="rotate(-90 100 100)"
             />
           </Svg>
-          <Text
-            className={`absolute font-display text-[80px] ${isUrgent ? "text-heat-fire" : "text-neon-cyan"}`}
-            style={
-              isUrgent
-                ? { shadowColor: COLORS.heatFire, shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 0 } }
-                : { shadowColor: COLORS.neonCyan, shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 0 } }
-            }
+          <MotiView
+            key={count}
+            from={{ scale: 1.25, opacity: 0.6 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "timing", duration: 280 }}
+            style={{ position: "absolute" }}
           >
-            {count}
-          </Text>
+            <Text
+              className={`font-display text-[80px] ${isUrgent ? "text-heat-fire" : "text-neon-cyan"}`}
+              style={
+                isUrgent
+                  ? { shadowColor: COLORS.heatFire, shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 0 } }
+                  : { shadowColor: COLORS.neonCyan, shadowOpacity: 0.5, shadowRadius: 20, shadowOffset: { width: 0, height: 0 } }
+              }
+            >
+              {count}
+            </Text>
+          </MotiView>
         </View>
         <Pressable
           onPress={() => {
