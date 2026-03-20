@@ -1,0 +1,184 @@
+import { COLORS } from "@/constants/theme";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/lib/supabase";
+import { useGameStore } from "@/store/useGameStore";
+import { useTaskStore } from "@/store/useTaskStore";
+import { useRouter } from "expo-router";
+import { useMemo, useState } from "react";
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+const DELETE_CONFIRMATION_TEXT = "DELETE";
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return "Something went wrong. Please try again.";
+}
+
+export default function ProfileScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { user, isAnonymous } = useAuth();
+  const resetGameStore = useGameStore((s) => s.reset);
+  const resetTaskStore = useTaskStore((s) => s.reset);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteInput, setDeleteInput] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const canDelete = useMemo(
+    () => deleteInput.trim().toUpperCase() === DELETE_CONFIRMATION_TEXT,
+    [deleteInput]
+  );
+  const canShowDeleteAccount = !!user && !isAnonymous;
+
+  const handleBack = () => {
+    router.back();
+  };
+
+  const cleanupLocalState = () => {
+    resetTaskStore();
+    resetGameStore();
+  };
+
+  const handleLogout = async () => {
+    setErrorMessage(null);
+    setIsLoggingOut(true);
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      setErrorMessage(error.message);
+      setIsLoggingOut(false);
+      return;
+    }
+    cleanupLocalState();
+    setIsLoggingOut(false);
+  };
+
+  const executeAccountDeletion = async () => {
+    setErrorMessage(null);
+    setIsDeletingAccount(true);
+    const { error } = await supabase.rpc("delete_my_account");
+    if (error) {
+      setErrorMessage(error.message);
+      setIsDeletingAccount(false);
+      return;
+    }
+
+    cleanupLocalState();
+    const signOutResult = await supabase.auth.signOut();
+    if (signOutResult.error) {
+      setErrorMessage(signOutResult.error.message);
+      setIsDeletingAccount(false);
+      return;
+    }
+
+    setIsDeletingAccount(false);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete account permanently?",
+      "This will remove your profile, tasks, XP history, and all progress forever. This action cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: () => void executeAccountDeletion() },
+      ]
+    );
+  };
+
+  return (
+    <ScrollView
+      style={{ flex: 1, backgroundColor: COLORS.background }}
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        paddingTop: insets.top + 10,
+        paddingBottom: insets.bottom + 18,
+        gap: 14,
+      }}
+    >
+      <View className="flex-row items-center justify-between">
+        <Pressable onPress={handleBack} className="px-3 py-[6px] rounded-full border border-border bg-card">
+          <Text className="text-muted-foreground font-sans text-[12px]">Back</Text>
+        </Pressable>
+        <Text className="text-neon-cyan font-display text-[22px]">PROFILE</Text>
+        <View style={{ width: 58 }} />
+      </View>
+
+      <View className="rounded-[18px] border border-border bg-card-elevated px-4 py-4 gap-2">
+        <Text className="text-muted-foreground font-sans text-[12px] uppercase tracking-[1px]">Account</Text>
+        <Text className="text-foreground font-display text-[20px]">
+          {isAnonymous ? "Guest Session" : "Signed In"}
+        </Text>
+        <Text className="text-muted-foreground font-sans text-[13px]">
+          {user?.email ? user.email : "No email linked"}
+        </Text>
+        <Text className="text-muted-foreground font-sans text-[12px]">
+          User ID: {user?.id ?? "Not available"}
+        </Text>
+      </View>
+
+      <View className="rounded-[18px] border border-border bg-card-elevated px-4 py-4 gap-3">
+        <Text className="text-muted-foreground font-sans text-[12px] uppercase tracking-[1px]">Session</Text>
+        <Text className="text-muted-foreground font-sans text-[13px] leading-5">
+          Log out to end this session on this device. You can sign back in anytime.
+        </Text>
+        <Pressable
+          onPress={() => void handleLogout()}
+          disabled={isLoggingOut || isDeletingAccount}
+          className="h-[50px] rounded-[14px] items-center justify-center border border-border bg-muted"
+          style={({ pressed }) => pressed && { transform: [{ scale: 0.98 }] }}
+        >
+          {isLoggingOut ? (
+            <ActivityIndicator color={COLORS.foreground} />
+          ) : (
+            <Text className="text-foreground font-display-medium text-[15px]">Log out</Text>
+          )}
+        </Pressable>
+      </View>
+
+      {canShowDeleteAccount ? (
+        <View className="rounded-[18px] border border-neon-pink bg-card-elevated px-4 py-4 gap-3">
+          <Text className="text-neon-pink font-sans text-[12px] uppercase tracking-[1px]">Danger zone</Text>
+          <Text className="text-foreground font-display text-[18px]">Delete account</Text>
+          <Text className="text-muted-foreground font-sans text-[13px] leading-5">
+            This permanently deletes your account and all data. To continue, type{" "}
+            <Text className="text-neon-pink font-sans-bold">{DELETE_CONFIRMATION_TEXT}</Text>.
+          </Text>
+          <TextInput
+            value={deleteInput}
+            onChangeText={setDeleteInput}
+            placeholder={`Type ${DELETE_CONFIRMATION_TEXT}`}
+            placeholderTextColor={COLORS.mutedForeground}
+            autoCapitalize="characters"
+            className="h-[48px] rounded-[12px] border border-border bg-card px-3 text-foreground"
+            editable={!isDeletingAccount && !isLoggingOut}
+          />
+          <Pressable
+            onPress={handleDeleteAccount}
+            disabled={!canDelete || isDeletingAccount || isLoggingOut}
+            className="h-[50px] rounded-[14px] items-center justify-center"
+            style={({ pressed }) => [
+              {
+                backgroundColor: canDelete ? COLORS.neonPink : COLORS.borderSubtle,
+                opacity: canDelete ? 1 : 0.6,
+              },
+              pressed && canDelete && { transform: [{ scale: 0.98 }] },
+            ]}
+          >
+            {isDeletingAccount ? (
+              <ActivityIndicator color={COLORS.foreground} />
+            ) : (
+              <Text className="text-foreground font-display-medium text-[15px]">Delete my account</Text>
+            )}
+          </Pressable>
+        </View>
+      ) : null}
+
+      {errorMessage ? (
+        <View className="rounded-[12px] border border-neon-pink bg-card px-[10px] py-[8px]">
+          <Text className="text-neon-pink font-sans text-[12px]">{getErrorMessage(errorMessage)}</Text>
+        </View>
+      ) : null}
+    </ScrollView>
+  );
+}

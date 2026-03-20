@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d9f5"/>
+      <stop offset="50%" stop-color="#8833ff"/>
+      <stop offset="100%" stop-color="#ff1ab3"/>
+    </linearGradient>
+    <linearGradient id="mGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d9f5"/>
+      <stop offset="100%" stop-color="#8833ff"/>
+    </linearGradient>
+    <filter id="glow2">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="#060a16"/>
+
+  <!-- Outer glow ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#8833ff" stroke-width="1" opacity="0.2" filter="url(#softGlow)"/>
+
+  <!-- Track ring -->
+  <circle cx="256" cy="256" r="200" fill="none" stroke="#1e2a45" stroke-width="28"/>
+
+  <!-- Progress arc ~75% (270 degrees) -->
+  <!-- circumference = 2*pi*200 = 1256.6 -->
+  <!-- dasharray = 942 (75%) 1256.6 -->
+  <circle cx="256" cy="256" r="200" fill="none"
+          stroke="url(#ringGrad)" stroke-width="28"
+          stroke-dasharray="942 1257"
+          stroke-dashoffset="314"
+          stroke-linecap="round"
+          filter="url(#glow2)"
+          transform="rotate(-90 256 256)"/>
+
+  <!-- Inner ring accent -->
+  <circle cx="256" cy="256" r="170" fill="none" stroke="#1e2a45" stroke-width="2"/>
+
+  <!-- Center M -->
+  <g filter="url(#glow2)">
+    <path d="M148 320 L148 210 L200 210 L256 275 L312 210 L364 210 L364 320 L334 320 L334 245 L256 318 L178 245 L178 320 Z"
+          fill="url(#mGrad2)"/>
+  </g>
+
+  <!-- Dot at end of progress arc -->
+  <circle cx="256" cy="57" r="16" fill="#ff1ab3" filter="url(#glow2)"/>
+</svg>

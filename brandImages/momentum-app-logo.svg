@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="boltGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#00d9f5"/>
+      <stop offset="30%" stop-color="#8833ff"/>
+      <stop offset="65%" stop-color="#ff6a00"/>
+      <stop offset="100%" stop-color="#ff1ab3"/>
+    </linearGradient>
+    <linearGradient id="bgBolt" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0d1120"/>
+      <stop offset="100%" stop-color="#060a16"/>
+    </linearGradient>
+    <filter id="boltGlow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="outerGlow">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="80" fill="url(#bgBolt)"/>
+
+  <!-- Outer glow effect for bolt -->
+  <path d="M290 55 L170 275 L230 275 L185 460 L355 220 L290 220 Z"
+        fill="#8833ff" filter="url(#outerGlow)" opacity="0.5"/>
+
+  <!-- Lightning bolt -->
+  <path d="M290 55 L170 275 L230 275 L185 460 L355 220 L290 220 Z"
+        fill="url(#boltGrad)" filter="url(#boltGlow)"/>
+
+  <!-- Bolt highlight edge -->
+  <path d="M290 55 L170 275 L230 275 L185 460 L355 220 L290 220 Z"
+        fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+
+  <!-- Horizontal speed lines -->
+  <line x1="60" y1="180" x2="140" y2="180" stroke="#00d9f5" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <line x1="40" y1="210" x2="130" y2="210" stroke="#00d9f5" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+  <line x1="55" y1="240" x2="125" y2="240" stroke="#00d9f5" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+
+  <line x1="372" y1="290" x2="455" y2="290" stroke="#ff1ab3" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+  <line x1="380" y1="320" x2="470" y2="320" stroke="#ff1ab3" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+  <line x1="375" y1="350" x2="460" y2="350" stroke="#ff1ab3" stroke-width="2" stroke-linecap="round" opacity="0.3"/>
+</svg>
