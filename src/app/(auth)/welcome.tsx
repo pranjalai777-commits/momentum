@@ -388,14 +388,13 @@ export default function WelcomeScreen() {
             </Pressable>
           </View>
 
-          {/* OR divider */}
-          <View className="flex-row items-center gap-[10px] my-[2px]">
+          {/* OR divider — social auth hidden for this release */}
+          {/* <View className="flex-row items-center gap-[10px] my-[2px]">
             <View className="flex-1 h-[1px] bg-border" />
             <Text className="text-muted-foreground font-sans-medium text-[10px] tracking-[2px]">OR</Text>
             <View className="flex-1 h-[1px] bg-border" />
           </View>
 
-          {/* Social auth row */}
           <View className="flex-row gap-[10px]">
             {Platform.OS === "ios" && (
               <Pressable
@@ -444,7 +443,7 @@ export default function WelcomeScreen() {
                 <Text className="text-foreground font-sans-medium text-[14px]">Google</Text>
               </Pressable>
             )}
-          </View>
+          </View> */}
 
           {/* Error message */}
           {errorMessage ? (

@@ -4,11 +4,13 @@ import { supabase } from "@/lib/supabase";
 import { useGameStore } from "@/store/useGameStore";
 import { useTaskStore } from "@/store/useTaskStore";
 import { User, X, LogOut, Trash2, Shield } from "lucide-react-native";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Keyboard,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -39,6 +41,20 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => setKeyboardOffset(e.endCoordinates.height)
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setKeyboardOffset(0)
+    );
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const canDelete = useMemo(
     () => deleteInput.trim().toUpperCase() === DELETE_CONFIRMATION_TEXT,
@@ -121,6 +137,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
             bottom: 0,
             left: 0,
             right: 0,
+            marginBottom: keyboardOffset,
             backgroundColor: COLORS.background,
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
@@ -135,6 +152,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
           </View>
 
           <ScrollView
+            ref={scrollRef}
             style={{ flex: 1 }}
             showsVerticalScrollIndicator
             indicatorStyle="white"
@@ -292,6 +310,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                   placeholderTextColor={COLORS.mutedForeground}
                   autoCapitalize="characters"
                   editable={!isDeletingAccount && !isLoggingOut}
+                  onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300)}
                   style={{
                     height: 48,
                     borderRadius: 12,

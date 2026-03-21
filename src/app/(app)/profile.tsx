@@ -6,7 +6,7 @@ import { useGameStore } from "@/store/useGameStore";
 import { useNoAdsStore } from "@/store/useNoAdsStore";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -27,6 +27,7 @@ export default function ProfileScreen() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const scrollRef = useRef<ScrollView>(null);
 
   const noAds = useNoAdsStore((s) => s.noAds);
   const { purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring, error: rcError } = useRevenueCat();
@@ -109,13 +110,16 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: COLORS.background }}
       contentContainerStyle={{
         paddingHorizontal: 16,
         paddingTop: insets.top + 10,
-        paddingBottom: insets.bottom + 18,
+        paddingBottom: insets.bottom + 120,
         gap: 14,
       }}
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
     >
       <View className="flex-row items-center justify-between">
         <Pressable onPress={handleBack} className="px-3 py-[6px] rounded-full border border-border bg-card">
@@ -230,6 +234,7 @@ export default function ProfileScreen() {
             autoCapitalize="characters"
             className="h-[48px] rounded-[12px] border border-border bg-card px-3 text-foreground"
             editable={!isDeletingAccount && !isLoggingOut}
+            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 350)}
           />
           <Pressable
             onPress={handleDeleteAccount}
