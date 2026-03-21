@@ -23,6 +23,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView, AnimatePresence } from "moti";
 import { useInterstitialAd } from "@/hooks/useInterstitialAd";
+import { useNoAdsStore } from "@/store/useNoAdsStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
@@ -77,16 +78,25 @@ export default function HomeScreen() {
   const { addTaskRemote, completeTaskRemote, deleteTaskRemote, activateTurboRemote } = useRemoteMutations();
 
   // --- Ad integration ---
+  // Pattern: first 2 tasks of the day are ad-free, every completion from 3rd onwards shows an ad.
+  // Resets at midnight each day. Skipped entirely if user has "Remove Ads" purchase.
   const { showAd } = useInterstitialAd();
-  // Tracks how many non-give-up tasks completed since the last ad was shown.
-  // Persisted in AsyncStorage so the count survives app restarts.
-  const adCounterRef = useRef(0);
-  const AD_TASK_INTERVAL = 3;
-  const AD_COUNTER_KEY = "momentum_ad_counter";
+  const noAds = useNoAdsStore((s) => s.noAds);
+  const adDailyCountRef = useRef(0);
+  const adDateRef = useRef("");
+  const AD_FREE_TASKS = 2;
+  const AD_DAILY_KEY = "momentum_ad_daily";
 
   useEffect(() => {
-    AsyncStorage.getItem(AD_COUNTER_KEY).then((val) => {
-      if (val !== null) adCounterRef.current = parseInt(val, 10);
+    AsyncStorage.getItem(AD_DAILY_KEY).then((val) => {
+      if (val) {
+        const stored = JSON.parse(val) as { date: string; count: number };
+        const today = new Date().toISOString().split("T")[0];
+        if (stored.date === today) {
+          adDailyCountRef.current = stored.count;
+          adDateRef.current = stored.date;
+        }
+      }
     });
   }, []);
 
@@ -231,15 +241,22 @@ export default function HomeScreen() {
       return; // Skip ad when save-progress prompt is showing
     }
 
-    // Only count real completions (not give-ups) toward the ad interval
+    // Only count real completions (not give-ups) toward the daily ad logic
     if (completionType !== "gave-up") {
-      adCounterRef.current += 1;
-      if (adCounterRef.current >= AD_TASK_INTERVAL) {
-        adCounterRef.current = 0;
-        AsyncStorage.setItem(AD_COUNTER_KEY, "0");
+      const today = new Date().toISOString().split("T")[0];
+      // Reset counter if it's a new day
+      if (adDateRef.current !== today) {
+        adDailyCountRef.current = 0;
+        adDateRef.current = today;
+      }
+      adDailyCountRef.current += 1;
+      AsyncStorage.setItem(
+        AD_DAILY_KEY,
+        JSON.stringify({ date: today, count: adDailyCountRef.current })
+      );
+      // Show ad from the 3rd task onwards every completion (skipped if user purchased Remove Ads)
+      if (!noAds && adDailyCountRef.current > AD_FREE_TASKS) {
         showAd();
-      } else {
-        AsyncStorage.setItem(AD_COUNTER_KEY, String(adCounterRef.current));
       }
     }
   }, [pendingSavePrompt, ceremony.completionType, showAd]);
@@ -257,7 +274,7 @@ export default function HomeScreen() {
   return (
     <View
       className="flex-1 bg-background px-4 overflow-hidden"
-      style={{ paddingTop: insets.top + 4, paddingBottom: insets.bottom + 6 }}
+      style={{ paddingTop: insets.top + 4 }}
     >
       {/* ── Ambient background — always on ── */}
       <MotiView
@@ -437,7 +454,7 @@ export default function HomeScreen() {
       </View>
 
       {/* ── Footer panel ── */}
-      <View className="z-[2] pb-1">
+      <View className="z-[2]" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
         <View className="h-px bg-border mb-3 opacity-50" />
         <View className="items-center gap-[10px]">
           <TurboButtonComponent data={data} onActivate={() => void handleActivateTurbo()} />

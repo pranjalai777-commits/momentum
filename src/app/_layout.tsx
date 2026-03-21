@@ -16,9 +16,16 @@ import {
 } from "@expo-google-fonts/space-grotesk";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import Purchases, { LOG_LEVEL } from "react-native-purchases";
+import { useNoAdsStore } from "@/store/useNoAdsStore";
 import { preloadSounds } from "@/lib/sounds";
+
+const RC_IOS_KEY = "appl_tsdCXhEcyQTLXNiwndALpbQbulg";
+const RC_ANDROID_KEY = "test_GACMaIBsiBFdKjOtmNIKvOzjSGB";
+const ENTITLEMENT_ID = "Momentum Pro";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,6 +37,7 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
+  const setNoAds = useNoAdsStore((s) => s.setNoAds);
   const [fontsLoaded] = useFonts({
     SpaceGrotesk_500Medium,
     SpaceGrotesk_600SemiBold,
@@ -39,6 +47,19 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
   });
+
+  useEffect(() => {
+    if (__DEV__) Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    const apiKey = Platform.OS === "ios" ? RC_IOS_KEY : RC_ANDROID_KEY;
+    Purchases.configure({ apiKey });
+    Purchases.getCustomerInfo()
+      .then((info) => {
+        setNoAds(ENTITLEMENT_ID in info.entitlements.active);
+      })
+      .catch((e: unknown) => {
+        console.warn("[RevenueCat] Failed to get customer info on init", e);
+      });
+  }, [setNoAds]);
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();

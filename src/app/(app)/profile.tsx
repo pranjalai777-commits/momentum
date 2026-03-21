@@ -1,7 +1,9 @@
 import { COLORS } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useRevenueCat } from "@/hooks/useRevenueCat";
 import { supabase } from "@/lib/supabase";
 import { useGameStore } from "@/store/useGameStore";
+import { useNoAdsStore } from "@/store/useNoAdsStore";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -26,11 +28,30 @@ export default function ProfileScreen() {
   const [deleteInput, setDeleteInput] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  const noAds = useNoAdsStore((s) => s.noAds);
+  const { purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring, error: rcError } = useRevenueCat();
+
   const canDelete = useMemo(
     () => deleteInput.trim().toUpperCase() === DELETE_CONFIRMATION_TEXT,
     [deleteInput]
   );
   const canShowDeleteAccount = !!user && !isAnonymous;
+
+  const handleRemoveAds = async () => {
+    const success = await purchaseRemoveAds();
+    if (success) {
+      Alert.alert("🎉 Ads Removed!", "You'll no longer see ads in Momentum. Thank you for your support!");
+    }
+  };
+
+  const handleRestorePurchases = async () => {
+    const found = await restorePurchases();
+    if (found) {
+      Alert.alert("✅ Purchase Restored", "Your Remove Ads purchase has been restored.");
+    } else {
+      Alert.alert("No Purchase Found", "We couldn't find a Remove Ads purchase for this account.");
+    }
+  };
 
   const handleBack = () => {
     router.back();
@@ -115,6 +136,63 @@ export default function ProfileScreen() {
         <Text className="text-muted-foreground font-sans text-[12px]">
           User ID: {user?.id ?? "Not available"}
         </Text>
+      </View>
+
+      <View className="rounded-[18px] border border-border bg-card-elevated px-4 py-4 gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-muted-foreground font-sans text-[12px] uppercase tracking-[1px]">Momentum Pro</Text>
+          {noAds ? (
+            <View className="px-2 py-[3px] rounded-full bg-neon-cyan/20 border border-neon-cyan/40">
+              <Text className="text-neon-cyan font-sans text-[11px]">Active</Text>
+            </View>
+          ) : null}
+        </View>
+        {noAds ? (
+          <>
+            <Text className="text-foreground font-display text-[18px]">Ads Removed ✨</Text>
+            <Text className="text-muted-foreground font-sans text-[13px] leading-5">
+              You're on Momentum Pro — enjoy an ad-free experience forever.
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text className="text-foreground font-display text-[18px]">Remove Ads</Text>
+            <Text className="text-muted-foreground font-sans text-[13px] leading-5">
+              One-time purchase. Remove all ads from Momentum forever and support development.
+            </Text>
+            <Pressable
+              onPress={() => void handleRemoveAds()}
+              disabled={isPurchasing || isRestoring}
+              className="h-[50px] rounded-[14px] items-center justify-center"
+              style={({ pressed }) => [
+                { backgroundColor: COLORS.neonCyan, opacity: isPurchasing ? 0.7 : 1 },
+                pressed && { transform: [{ scale: 0.98 }] },
+              ]}
+            >
+              {isPurchasing ? (
+                <ActivityIndicator color={COLORS.background} />
+              ) : (
+                <Text style={{ color: COLORS.background }} className="font-display-medium text-[15px]">
+                  Remove Ads — $2.99
+                </Text>
+              )}
+            </Pressable>
+            <Pressable
+              onPress={() => void handleRestorePurchases()}
+              disabled={isPurchasing || isRestoring}
+              className="h-[40px] items-center justify-center"
+            >
+              {isRestoring ? (
+                <ActivityIndicator color={COLORS.mutedForeground} size="small" />
+              ) : (
+                <Text className="text-muted-foreground font-sans text-[13px]">Restore Purchase</Text>
+              )}
+            </Pressable>
+            {rcError ? (
+              <Text className="text-neon-pink font-sans text-[12px]">{rcError}</Text>
+            ) : null}
+          </>
+        )}
       </View>
 
       <View className="rounded-[18px] border border-border bg-card-elevated px-4 py-4 gap-3">
