@@ -51,7 +51,11 @@ export default function RootLayout() {
   useEffect(() => {
     if (__DEV__) Purchases.setLogLevel(LOG_LEVEL.DEBUG);
     const apiKey = Platform.OS === "ios" ? RC_IOS_KEY : RC_ANDROID_KEY;
-    Purchases.configure({ apiKey });
+    try {
+      Purchases.configure({ apiKey });
+    } catch {
+      // Already configured — safe to ignore
+    }
     Purchases.getCustomerInfo()
       .then((info) => {
         setNoAds(ENTITLEMENT_ID in info.entitlements.active);
@@ -59,7 +63,8 @@ export default function RootLayout() {
       .catch((e: unknown) => {
         console.warn("[RevenueCat] Failed to get customer info on init", e);
       });
-  }, [setNoAds]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded) SplashScreen.hideAsync();
