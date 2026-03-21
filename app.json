@@ -58,7 +58,14 @@
       "expo-font",
       "expo-audio",
       "expo-web-browser",
-      "expo-asset"
+      "expo-asset",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-2468139254817625~1038010491",
+          "iosAppId": "ca-app-pub-2468139254817625~3720014156"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

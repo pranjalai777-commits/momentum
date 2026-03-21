@@ -22,7 +22,9 @@ import type { CeremonyState, CompletionType, Task } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView, AnimatePresence } from "moti";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useInterstitialAd } from "@/hooks/useInterstitialAd";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Sparkles } from "lucide-react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -73,6 +75,20 @@ export default function HomeScreen() {
   const dismissDailyBonus = useGameStore((s) => s.dismissDailyBonus);
   const checkTurboExpiry = useGameStore((s) => s.checkTurboExpiry);
   const { addTaskRemote, completeTaskRemote, deleteTaskRemote, activateTurboRemote } = useRemoteMutations();
+
+  // --- Ad integration ---
+  const { showAd } = useInterstitialAd();
+  // Tracks how many non-give-up tasks completed since the last ad was shown.
+  // Persisted in AsyncStorage so the count survives app restarts.
+  const adCounterRef = useRef(0);
+  const AD_TASK_INTERVAL = 3;
+  const AD_COUNTER_KEY = "momentum_ad_counter";
+
+  useEffect(() => {
+    AsyncStorage.getItem(AD_COUNTER_KEY).then((val) => {
+      if (val !== null) adCounterRef.current = parseInt(val, 10);
+    });
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => setPrompt(getMotivationalPrompt()), 8000);
@@ -203,12 +219,30 @@ export default function HomeScreen() {
 
   const handleCeremonyFinish = useCallback(() => {
     console.log("[🔬CEREMONY] onFinish called — setting active=false");
+
+    // Capture completionType before clearing ceremony state
+    const completionType = ceremony.completionType;
+
     setCeremony((prev) => ({ ...prev, active: false }));
+
     if (pendingSavePrompt) {
       setPendingSavePrompt(false);
       setShowSaveProgressPrompt(true);
+      return; // Skip ad when save-progress prompt is showing
     }
-  }, [pendingSavePrompt]);
+
+    // Only count real completions (not give-ups) toward the ad interval
+    if (completionType !== "gave-up") {
+      adCounterRef.current += 1;
+      if (adCounterRef.current >= AD_TASK_INTERVAL) {
+        adCounterRef.current = 0;
+        AsyncStorage.setItem(AD_COUNTER_KEY, "0");
+        showAd();
+      } else {
+        AsyncStorage.setItem(AD_COUNTER_KEY, String(adCounterRef.current));
+      }
+    }
+  }, [pendingSavePrompt, ceremony.completionType, showAd]);
 
   const handleDismissSavePrompt = useCallback(() => {
     setSaveProgressDismissed(true);
