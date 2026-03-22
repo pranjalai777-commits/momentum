@@ -1,0 +1,6 @@
+# Exclude stale native projects from cloud uploads.
+# This forces EAS to prebuild native projects from app.json (SDK 54 config).
+ios/
+android/
+*.ipa
+*.apk

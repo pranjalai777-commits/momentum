@@ -1,0 +1,483 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 230 25% 4%;
+    --foreground: 0 0% 97%;
+
+    --card: 230 22% 8%;
+    --card-foreground: 0 0% 97%;
+
+    --popover: 230 22% 8%;
+    --popover-foreground: 0 0% 97%;
+
+    --primary: 270 100% 65%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 230 20% 12%;
+    --secondary-foreground: 0 0% 85%;
+
+    --muted: 230 18% 10%;
+    --muted-foreground: 230 14% 40%;
+
+    --accent: 190 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 230 18% 13%;
+    --input: 230 18% 13%;
+    --ring: 270 100% 65%;
+
+    --radius: 1rem;
+
+    --glow-primary: 0 0% 0% / 0;
+    --heat-cold: 210 60% 45%;
+    --heat-warm: 45 100% 55%;
+    --heat-hot: 25 100% 58%;
+    --heat-fire: 8 100% 58%;
+
+    --neon-purple: 270 100% 65%;
+    --neon-cyan: 190 100% 50%;
+    --neon-pink: 330 100% 60%;
+
+    --xp-bar: 270 100% 65%;
+    --xp-bar-bg: 230 18% 10%;
+
+    --success: 160 80% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --daily-bonus: 45 100% 55%;
+
+    --sidebar-background: 230 25% 4%;
+    --sidebar-foreground: 0 0% 97%;
+    --sidebar-primary: 270 100% 65%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 230 20% 12%;
+    --sidebar-accent-foreground: 0 0% 97%;
+    --sidebar-border: 230 18% 13%;
+    --sidebar-ring: 270 100% 65%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .glow-primary {
+    box-shadow: 0 0 30px 6px hsl(var(--neon-purple) / 0.35),
+                0 0 60px 15px hsl(var(--neon-purple) / 0.12);
+  }
+
+  .glow-primary-intense {
+    box-shadow: 0 0 20px 4px hsl(var(--neon-purple) / 0.5),
+                0 0 50px 12px hsl(var(--neon-cyan) / 0.2),
+                0 0 80px 25px hsl(var(--neon-purple) / 0.1);
+  }
+
+  .glow-success {
+    box-shadow: 0 0 30px 6px hsl(var(--success) / 0.4),
+                0 0 60px 15px hsl(var(--neon-cyan) / 0.15),
+                0 0 100px 30px hsl(var(--success) / 0.08);
+  }
+
+  .glow-neon {
+    box-shadow: 0 0 15px 3px hsl(var(--neon-purple) / 0.3),
+                0 0 40px 8px hsl(var(--neon-cyan) / 0.15),
+                inset 0 0 20px 4px hsl(var(--neon-purple) / 0.05);
+  }
+
+  .text-glow {
+    text-shadow: 0 0 15px hsl(var(--neon-purple) / 0.6),
+                 0 0 30px hsl(var(--neon-cyan) / 0.3);
+  }
+
+  .text-glow-success {
+    text-shadow: 0 0 15px hsl(var(--success) / 0.6),
+                 0 0 30px hsl(var(--neon-cyan) / 0.3),
+                 0 0 50px hsl(var(--success) / 0.15);
+  }
+
+  .gradient-button {
+    background: linear-gradient(135deg, hsl(var(--neon-cyan)), hsl(270 80% 55%));
+  }
+
+  .gradient-button-fire {
+    background: linear-gradient(135deg, hsl(var(--heat-hot)), hsl(var(--neon-pink)), hsl(var(--neon-purple)));
+  }
+
+  .countdown-pulse {
+    animation: countdown-pulse 1s ease-in-out;
+  }
+
+  .ring-breathe {
+    animation: ring-breathe 2.5s ease-in-out infinite;
+    will-change: box-shadow;
+  }
+
+  .ring-spin-slow {
+    animation: ring-spin 8s linear infinite;
+  }
+
+  .success-burst {
+    animation: success-burst 1.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .success-particles {
+    animation: success-particles 1.5s ease-out forwards;
+  }
+
+  .screen-flash {
+    animation: screen-flash 0.5s ease-out forwards;
+  }
+
+  .streak-glow {
+    animation: streak-glow 1.5s ease-in-out infinite;
+  }
+
+  .shake-it {
+    animation: shake 0.4s ease-in-out;
+  }
+
+  .level-up-pop {
+    animation: level-up-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .countdown-tick {
+    animation: countdown-tick 0.3s ease-out;
+  }
+
+  .heat-throb {
+    animation: heat-throb 0.6s ease-out;
+  }
+
+  .daily-bonus-pop {
+    animation: daily-bonus-pop 1.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .fade-slide-up {
+    animation: fade-slide-up 0.5s ease-out forwards;
+  }
+
+  .subtle-float {
+    animation: subtle-float 3s ease-in-out infinite;
+  }
+
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  }
+
+  .success-checkmark {
+    animation: draw-check 0.5s ease-out 0.3s forwards;
+    stroke-dasharray: 50;
+    stroke-dashoffset: 50;
+  }
+}
+
+@keyframes countdown-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ring-breathe {
+  0%, 100% {
+    box-shadow: 0 0 20px 4px hsl(var(--neon-purple) / 0.25),
+                0 0 40px 10px hsl(var(--neon-cyan) / 0.08);
+  }
+  50% {
+    box-shadow: 0 0 35px 8px hsl(var(--neon-purple) / 0.45),
+                0 0 70px 18px hsl(var(--neon-cyan) / 0.15);
+  }
+}
+
+@keyframes ring-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+@keyframes xp-pop {
+  0% { opacity: 0; transform: translateY(0) scale(0.3); }
+  25% { opacity: 1; transform: translateY(-14px) scale(1.4); }
+  50% { opacity: 1; transform: translateY(-20px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-36px) scale(0.7); }
+}
+
+.xp-pop {
+  animation: xp-pop 1.2s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes success-burst {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  25% { transform: scale(1.15); opacity: 1; }
+  40% { transform: scale(0.95); }
+  55% { transform: scale(1.05); }
+  70% { transform: scale(0.98); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes success-particles {
+  0% { opacity: 1; transform: scale(0.5); }
+  50% { opacity: 0.8; transform: scale(1.5); }
+  100% { opacity: 0; transform: scale(2.5); }
+}
+
+@keyframes screen-flash {
+  0% { opacity: 0.4; }
+  100% { opacity: 0; }
+}
+
+@keyframes streak-glow {
+  0%, 100% { text-shadow: 0 0 4px hsl(var(--neon-purple) / 0.3); }
+  50% { text-shadow: 0 0 12px hsl(var(--neon-purple) / 0.6), 0 0 24px hsl(var(--neon-cyan) / 0.2); }
+}
+
+@keyframes level-up-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.3); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes countdown-tick {
+  0% { transform: scale(1.2); opacity: 0.6; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes heat-throb {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+@keyframes daily-bonus-pop {
+  0% { opacity: 0; transform: translateY(10px) scale(0.8); }
+  40% { opacity: 1; transform: translateY(-4px) scale(1.1); }
+  70% { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-16px) scale(0.9); }
+}
+
+@keyframes fade-slide-up {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes subtle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes draw-check {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes ember-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+@keyframes ember-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+/* ===== XP Ceremony Animations ===== */
+
+.ceremony-enter {
+  animation: ceremony-fade-in 0.6s ease-out forwards;
+}
+
+.ceremony-exit {
+  animation: ceremony-fade-out 0.6s ease-out forwards;
+}
+
+.ceremony-content-enter {
+  animation: ceremony-rise-in 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.ceremony-particle {
+  animation: ceremony-float 3s ease-in-out infinite;
+  opacity: 0;
+  animation-fill-mode: forwards;
+}
+
+.ceremony-bar-shimmer {
+  animation: ceremony-shimmer 1.5s ease-in-out infinite;
+}
+
+.ceremony-xp-pop {
+  animation: ceremony-xp-appear 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.ceremony-level-burst {
+  animation: ceremony-level-burst 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.ceremony-level-glow {
+  animation: ceremony-glow-pulse 1.5s ease-in-out infinite;
+}
+
+.ceremony-ring-expand {
+  animation: ceremony-ring-expand 1.2s ease-out forwards;
+}
+
+.ceremony-levelup-text {
+  animation: ceremony-levelup-text 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes ceremony-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes ceremony-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes ceremony-rise-in {
+  0% { opacity: 0; transform: translateY(60px) scale(0.8); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes ceremony-float {
+  0% { opacity: 0; transform: translateY(20px) scale(0); }
+  20% { opacity: 0.7; transform: translateY(0) scale(1); }
+  80% { opacity: 0.4; transform: translateY(-30px) scale(0.8); }
+  100% { opacity: 0; transform: translateY(-50px) scale(0.3); }
+}
+
+@keyframes ceremony-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+@keyframes ceremony-xp-appear {
+  0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+  60% { opacity: 1; transform: scale(1.2) translateY(-5px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes ceremony-level-burst {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes ceremony-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 30px hsl(var(--neon-purple) / 0.3), 0 0 60px hsl(var(--neon-cyan) / 0.15);
+  }
+  50% {
+    box-shadow: 0 0 50px hsl(var(--neon-purple) / 0.5), 0 0 100px hsl(var(--neon-cyan) / 0.3);
+  }
+}
+
+@keyframes ceremony-ring-expand {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes ceremony-levelup-text {
+  0% { opacity: 0; transform: scale(0.3); }
+  60% { opacity: 1; transform: scale(1.3); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ===== Turbo Mode ===== */
+
+.turbo-mode {
+  --background: 260 35% 5%;
+  --neon-purple: 280 100% 70%;
+  --neon-cyan: 180 100% 55%;
+  --neon-pink: 340 100% 65%;
+  --heat-fire: 20 100% 60%;
+  --heat-hot: 35 100% 60%;
+}
+
+.turbo-mode .turbo-ambient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(ellipse at 50% 0%, hsl(280 100% 70% / 0.12) 0%, transparent 50%),
+              radial-gradient(ellipse at 20% 80%, hsl(340 100% 65% / 0.08) 0%, transparent 40%),
+              radial-gradient(ellipse at 80% 60%, hsl(180 100% 55% / 0.08) 0%, transparent 40%);
+  animation: turbo-ambient-pulse 3s ease-in-out infinite;
+}
+
+@keyframes turbo-ambient-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes turbo-border-spin {
+  from { --turbo-angle: 0deg; }
+  to { --turbo-angle: 360deg; }
+}
+
+.turbo-button-ready {
+  background: linear-gradient(135deg, hsl(45 100% 55%), hsl(25 100% 55%));
+  color: hsl(0 0% 5%);
+  transition: all 0.3s ease;
+  box-shadow: 0 0 12px hsl(45 100% 55% / 0.3);
+}
+
+.turbo-button-ready:hover {
+  box-shadow: 0 0 20px hsl(45 100% 55% / 0.5), 0 0 40px hsl(25 100% 55% / 0.2);
+  transform: scale(1.05);
+}
+
+.turbo-button-active {
+  background: linear-gradient(135deg, hsl(45 100% 55%), hsl(340 100% 60%), hsl(280 100% 65%));
+  background-size: 200% 200%;
+  animation: turbo-button-shimmer 2s ease-in-out infinite;
+  color: hsl(0 0% 100%);
+  box-shadow: 0 0 15px hsl(340 100% 60% / 0.4), 0 0 30px hsl(280 100% 65% / 0.2);
+}
+
+@keyframes turbo-button-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.turbo-heat-glow {
+  animation: turbo-heat-glow 1.5s ease-in-out infinite !important;
+}
+
+@keyframes turbo-heat-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 12px hsl(8 100% 58% / 0.6)) drop-shadow(0 0 25px hsl(340 100% 60% / 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px hsl(8 100% 58% / 0.8)) drop-shadow(0 0 40px hsl(340 100% 60% / 0.5)) drop-shadow(0 0 60px hsl(280 100% 65% / 0.2));
+  }
+}
