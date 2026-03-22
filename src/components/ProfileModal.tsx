@@ -1,7 +1,9 @@
 import { COLORS } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
+import { useRevenueCat } from "@/hooks/useRevenueCat";
 import { supabase } from "@/lib/supabase";
 import { useGameStore } from "@/store/useGameStore";
+import { useNoAdsStore } from "@/store/useNoAdsStore";
 import { useTaskStore } from "@/store/useTaskStore";
 import { User, X, LogOut, Trash2, Shield } from "lucide-react-native";
 import { useMemo, useRef, useState, useEffect } from "react";
@@ -43,6 +45,20 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+
+  const noAds = useNoAdsStore((s) => s.noAds);
+  const { purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring, error: rcError } = useRevenueCat();
+
+  const handleRemoveAds = async () => {
+    const success = await purchaseRemoveAds();
+    if (success) Alert.alert("🎉 Ads Removed!", "You'll no longer see ads in Momentum. Thank you for your support!");
+  };
+
+  const handleRestorePurchases = async () => {
+    const found = await restorePurchases();
+    if (found) Alert.alert("✅ Purchase Restored", "Your Remove Ads purchase has been restored.");
+    else Alert.alert("No Purchase Found", "We couldn't find a Remove Ads purchase for this account.");
+  };
 
   useEffect(() => {
     const show = Keyboard.addListener(
@@ -231,51 +247,46 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
               )}
             </View>
 
-            {/* Session / Logout */}
-            <View
-              style={{
-                borderRadius: 18,
-                borderWidth: 1,
-                borderColor: COLORS.border,
-                backgroundColor: COLORS.cardElevated,
-                padding: 16,
-                gap: 10,
-                marginBottom: 12,
-              }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <LogOut size={13} color={COLORS.mutedForeground} />
+            {/* Remove Ads / Momentum Pro — signed-in users only */}
+            {!isAnonymous && (
+            <View style={{ borderRadius: 18, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.cardElevated, padding: 16, gap: 10, marginBottom: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                 <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>
-                  Session
+                  Momentum Pro
                 </Text>
-              </View>
-              <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20 }}>
-                Log out to end this session on this device. You can sign back in anytime.
-              </Text>
-              <Pressable
-                onPress={() => void handleLogout()}
-                disabled={isLoggingOut || isDeletingAccount}
-                style={({ pressed }) => ({
-                  height: 50,
-                  borderRadius: 14,
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderWidth: 1,
-                  borderColor: COLORS.border,
-                  backgroundColor: COLORS.muted,
-                  opacity: pressed ? 0.8 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                })}
-              >
-                {isLoggingOut ? (
-                  <ActivityIndicator color={COLORS.foreground} />
-                ) : (
-                  <Text style={{ color: COLORS.foreground, fontFamily: "SpaceGrotesk_600SemiBold", fontSize: 15 }}>
-                    Log out
-                  </Text>
+                {noAds && (
+                  <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99, backgroundColor: COLORS.neonCyan + "22", borderWidth: 1, borderColor: COLORS.neonCyan + "44" }}>
+                    <Text style={{ color: COLORS.neonCyan, fontFamily: "Inter_400Regular", fontSize: 11 }}>Active</Text>
+                  </View>
                 )}
-              </Pressable>
+              </View>
+              {noAds ? (
+                <>
+                  <Text style={{ color: COLORS.foreground, fontFamily: "SpaceGrotesk_700Bold", fontSize: 17 }}>Ads Removed ✨</Text>
+                  <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20 }}>
+                    You're on Momentum Pro — enjoy an ad-free experience forever.
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={{ color: COLORS.foreground, fontFamily: "SpaceGrotesk_700Bold", fontSize: 17 }}>Remove Ads</Text>
+                  <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20 }}>
+                    One-time purchase. Remove all ads from Momentum forever.
+                  </Text>
+                  <Pressable
+                    onPress={() => void handleRemoveAds()}
+                    disabled={isPurchasing || isRestoring}
+                    style={({ pressed }) => ({ height: 50, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.neonCyan, opacity: isPurchasing ? 0.7 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
+                  >
+                    {isPurchasing ? <ActivityIndicator color="#fff" /> : (
+                      <Text style={{ color: "#fff", fontFamily: "SpaceGrotesk_700Bold", fontSize: 15 }}>Remove Ads — $2.99</Text>
+                    )}
+                  </Pressable>
+                  {rcError ? <Text style={{ color: COLORS.neonPink, fontFamily: "Inter_400Regular", fontSize: 12 }}>{rcError}</Text> : null}
+                </>
+              )}
             </View>
+            )}
 
             {/* Danger zone */}
             {canShowDeleteAccount ? (
@@ -349,6 +360,52 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                 </Pressable>
               </View>
             ) : null}
+
+            {/* Session / Logout */}
+            <View
+              style={{
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: COLORS.border,
+                backgroundColor: COLORS.cardElevated,
+                padding: 16,
+                gap: 10,
+                marginBottom: 12,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <LogOut size={13} color={COLORS.mutedForeground} />
+                <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 11, textTransform: "uppercase", letterSpacing: 1 }}>
+                  Session
+                </Text>
+              </View>
+              <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20 }}>
+                Log out to end this session on this device. You can sign back in anytime.
+              </Text>
+              <Pressable
+                onPress={() => void handleLogout()}
+                disabled={isLoggingOut || isDeletingAccount}
+                style={({ pressed }) => ({
+                  height: 50,
+                  borderRadius: 14,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1,
+                  borderColor: COLORS.border,
+                  backgroundColor: COLORS.muted,
+                  opacity: pressed ? 0.8 : 1,
+                  transform: [{ scale: pressed ? 0.98 : 1 }],
+                })}
+              >
+                {isLoggingOut ? (
+                  <ActivityIndicator color={COLORS.foreground} />
+                ) : (
+                  <Text style={{ color: COLORS.foreground, fontFamily: "SpaceGrotesk_600SemiBold", fontSize: 15 }}>
+                    Log out
+                  </Text>
+                )}
+              </Pressable>
+            </View>
 
             {/* Error message */}
             {errorMessage ? (

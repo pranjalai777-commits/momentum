@@ -398,12 +398,18 @@ export default function HomeScreen() {
               exit={{ opacity: 0, translateY: -5 }}
               transition={{ type: "timing", duration: 380 }}
             >
-              <Text className="text-muted-foreground font-sans text-[13px] -mt-1">{prompt}</Text>
+              <Text className="text-muted-foreground font-sans text-[13px] -mt-2">{prompt}</Text>
             </MotiView>
           </AnimatePresence>
         <DailyBannerComponent
           dailyStreak={data.dailyStreak}
-          onOpenProfile={() => setProfileModalVisible(true)}
+          onOpenProfile={() => {
+            if (isAnonymous) {
+              router.push("/(auth)/email?mode=signup&upgrade=1");
+            } else {
+              setProfileModalVisible(true);
+            }
+          }}
           onOpenStats={() => setStatsModalVisible(true)}
           onOpenStreak={() => setStreakModalVisible(true)}
         />
