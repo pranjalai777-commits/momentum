@@ -1,4 +1,4 @@
-import { COLORS } from "@/constants/theme";
+import { COLORS, FONTS } from "@/constants/theme";
 import { hapticChipTap } from "@/lib/haptics";
 import { BarChart3, Calendar, User } from "lucide-react-native";
 import { Pressable, Text, View } from "react-native";
@@ -10,43 +10,53 @@ type DailyBannerProps = {
   onOpenStreak: () => void;
 };
 
+// Web DailyBanner is a flat text row (icons + muted text, "·" separators) —
+// mobile keeps Profile/Stats entries for navigation but uses the same flat style.
 function DailyBanner({ dailyStreak, onOpenProfile, onOpenStats, onOpenStreak }: DailyBannerProps) {
   const streakActive = dailyStreak >= 3;
 
   return (
-    <View className="flex-row items-center justify-center gap-2 flex-wrap">
+    <View className="flex-row items-center justify-center gap-4">
       <Pressable
         onPress={() => { hapticChipTap(); onOpenStreak(); }}
-        className={`flex-row items-center gap-[5px] px-[10px] py-[5px] rounded-[20px] border ${streakActive ? "bg-[#081c2a]" : "bg-card border-border"}`}
-        style={({ pressed }) => ({
-          borderColor: streakActive ? COLORS.neonCyan + "55" : undefined,
-          opacity: pressed ? 0.85 : 1,
-        })}
+        className="flex-row items-center gap-[6px]"
+        style={({ pressed }) => pressed && { opacity: 0.7 }}
       >
-        <Calendar size={13} color={streakActive ? COLORS.neonCyan : COLORS.mutedForeground} />
+        <Calendar size={14} color={COLORS.primary} />
         <Text
-          className={`text-[12px] ${streakActive ? "text-neon-cyan font-display-medium" : "text-muted-foreground font-sans"}`}
+          style={[
+            { fontFamily: FONTS.display, fontSize: 12, color: streakActive ? COLORS.primary : COLORS.mutedForeground },
+            streakActive && {
+              textShadowColor: COLORS.neonPurple + "99",
+              textShadowRadius: 12,
+              textShadowOffset: { width: 0, height: 0 },
+            },
+          ]}
         >
           {dailyStreak}d streak
         </Text>
       </Pressable>
 
+      <Text style={{ color: COLORS.border }}>·</Text>
+
       <Pressable
         onPress={() => { hapticChipTap(); onOpenProfile(); }}
-        className="flex-row items-center gap-[5px] px-[10px] py-[5px] rounded-[20px] bg-card border border-border"
-        style={({ pressed }) => pressed && { opacity: 0.85 }}
+        className="flex-row items-center gap-[6px]"
+        style={({ pressed }) => pressed && { opacity: 0.7 }}
       >
-        <User size={13} color={COLORS.mutedForeground} />
-        <Text className="text-muted-foreground font-sans text-[12px]">Profile</Text>
+        <User size={14} color={COLORS.mutedForeground} />
+        <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.mutedForeground }}>Profile</Text>
       </Pressable>
+
+      <Text style={{ color: COLORS.border }}>·</Text>
 
       <Pressable
         onPress={() => { hapticChipTap(); onOpenStats(); }}
-        className="flex-row items-center gap-[5px] px-[10px] py-[5px] rounded-[20px] bg-card border border-border"
-        style={({ pressed }) => pressed && { opacity: 0.85 }}
+        className="flex-row items-center gap-[6px]"
+        style={({ pressed }) => pressed && { opacity: 0.7 }}
       >
-        <BarChart3 size={13} color={COLORS.mutedForeground} />
-        <Text className="text-muted-foreground font-sans text-[12px]">Stats</Text>
+        <BarChart3 size={14} color={COLORS.mutedForeground} />
+        <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.mutedForeground }}>Stats</Text>
       </Pressable>
     </View>
   );

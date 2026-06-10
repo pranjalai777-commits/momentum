@@ -80,10 +80,10 @@ export function getTreeHealthLabel(health: number): string {
 }
 
 export function getTreeHealthColor(health: number): string {
-  if (health >= 80) return "#22c97e";
+  if (health >= 80) return "#17cf91";
   if (health >= HEALTH_WARNING_THRESHOLD) return "#7ac943";
-  if (health >= HEALTH_CRITICAL_THRESHOLD) return "#f0ad00";
-  if (health > 0) return "#f07000";
+  if (health >= HEALTH_CRITICAL_THRESHOLD) return "#ffc61a";
+  if (health > 0) return "#ff8229";
   return "#8b2d2d";
 }
 

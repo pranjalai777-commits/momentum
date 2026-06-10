@@ -67,8 +67,8 @@ export default function TreeScreen() {
       </View>
 
       {isCritical ? (
-        <View className="rounded-[12px] border px-3 py-2" style={{ borderColor: "#f07000aa", backgroundColor: "rgba(240,112,0,0.10)" }}>
-          <Text className="text-[12px] font-display" style={{ color: "#f0ad00" }}>
+        <View className="rounded-[12px] border px-3 py-2" style={{ borderColor: "#ff8229aa", backgroundColor: "rgba(240,112,0,0.10)" }}>
+          <Text className="text-[12px] font-display" style={{ color: "#ffc61a" }}>
             Your tree is wilting. Complete tasks to heal it.
           </Text>
         </View>

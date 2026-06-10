@@ -1,5 +1,8 @@
-import { COLORS } from "@/constants/theme";
+import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
+import { springy } from "@/lib/easing";
 import { getHeatLabel, getHeatMultiplier } from "@/lib/momentum";
+import RadialGlow from "@/components/ui/RadialGlow";
+import { LinearGradient } from "expo-linear-gradient";
 import { Flame } from "lucide-react-native";
 import { useEffect } from "react";
 import { Text, View } from "react-native";
@@ -16,104 +19,130 @@ type HeatMeterProps = {
   turboActive?: boolean;
 };
 
-function getFlameColor(heat: number): string {
-  if (heat >= 80) return COLORS.heatFire;
-  if (heat >= 60) return COLORS.heatHot;
-  if (heat >= 40) return COLORS.heatWarm;
-  if (heat >= 20) return COLORS.heatCold;
-  return COLORS.mutedForeground;
-}
-
 function HeatMeter({ heat, turboActive = false }: HeatMeterProps) {
   const multiplier = getHeatMultiplier(heat);
   const label = getHeatLabel(heat);
-  const flameColor = getFlameColor(heat);
+
+  const isMaxFire = heat >= 80;
+  const isOnFire = heat >= 60;
+  const isWarm = heat >= 40;
+
+  // Web flame color tiers (< 20 uses muted-foreground / 0.4)
+  const flameColor = isMaxFire
+    ? COLORS.heatFire
+    : isOnFire
+    ? COLORS.heatHot
+    : isWarm
+    ? COLORS.heatWarm
+    : heat >= 20
+    ? COLORS.heatCold
+    : COLORS.mutedForeground + "66";
+  // Web label color = getHeatColor (heat-cold even below 20)
+  const labelColor = isMaxFire ? COLORS.heatFire : isOnFire ? COLORS.heatHot : isWarm ? COLORS.heatWarm : COLORS.heatCold;
+  const flameSize = isMaxFire ? 32 : isOnFire ? 28 : isWarm ? 26 : 24;
+
   const pulse = useSharedValue(1);
-  const glowOpacity = useSharedValue(heat >= 40 ? 0.35 : 0);
   const width = useSharedValue(heat);
 
   useEffect(() => {
-    width.value = withTiming(heat, { duration: 700 });
-    glowOpacity.value = withTiming(heat >= 40 ? 0.35 : 0, { duration: 500 });
-  }, [heat, width, glowOpacity]);
+    // Web: width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)
+    width.value = withTiming(heat, { duration: 700, easing: springy });
+  }, [heat, width]);
 
   useEffect(() => {
-    if (heat >= 80) {
-      pulse.value = withRepeat(
-        withTiming(1.18, { duration: 1100, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
+    // Web ember-breathe (scale 1 → 1.15, 2.5s) at max heat, ember-pulse (1 → 1.06, 3s) when hot
+    if (isMaxFire) {
+      pulse.value = withRepeat(withTiming(1.15, { duration: 2500, easing: Easing.inOut(Easing.ease) }), -1, true);
       return;
     }
-    if (heat >= 60) {
-      pulse.value = withRepeat(
-        withTiming(1.1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        -1,
-        true
-      );
+    if (isOnFire) {
+      pulse.value = withRepeat(withTiming(1.06, { duration: 3000, easing: Easing.inOut(Easing.ease) }), -1, true);
       return;
     }
     pulse.value = withTiming(1, { duration: 250 });
-  }, [heat, pulse]);
+  }, [isMaxFire, isOnFire, pulse]);
 
   const flameStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
   }));
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
-  }));
   const fillStyle = useAnimatedStyle(() => ({ width: `${width.value}%` }));
 
-  return (
-    <View className="items-center gap-[6px]">
-      <View className="items-center justify-center w-11 h-11">
-        <Animated.View
-          className="absolute w-9 h-9 rounded-full"
-          style={[
-            glowStyle,
-            {
-              backgroundColor: flameColor,
-              shadowColor: flameColor,
-              shadowRadius: 16,
-              shadowOffset: { width: 0, height: 0 },
-              shadowOpacity: 0.6,
-            },
-          ]}
-        />
-        <Animated.View className="items-center justify-center" style={flameStyle}>
-          <Flame size={28} color={flameColor} fill={heat >= 40 ? flameColor : "transparent"} />
-        </Animated.View>
-      </View>
+  const barGradient = isMaxFire ? GRADIENTS.hotFire : isOnFire ? [COLORS.heatWarm, COLORS.heatHot] as const : null;
+  const barSolid = isWarm ? COLORS.heatWarm : COLORS.heatCold;
 
-      <View className="flex-row items-center gap-[6px]">
-        <Text className="font-display tracking-[1.6px] text-[11px]" style={{ color: flameColor }}>
+  return (
+    <View className="items-center gap-2">
+      <View className="items-center gap-[6px]">
+        <View className="items-center justify-center" style={{ width: 52, height: 52 }}>
+          {/* Web outer aura ring (heat ≥ 40): radial color/0.15, breathing */}
+          {isWarm ? (
+            <RadialGlow
+              color={flameColor}
+              size={flameSize + 20}
+              opacity={0.15}
+              pulse
+              pulseDuration={isMaxFire ? 3000 : 4000}
+              style={{ position: "absolute" }}
+            />
+          ) : null}
+          <Animated.View
+            style={[
+              flameStyle,
+              {
+                shadowColor: turboActive ? COLORS.heatFire : flameColor,
+                shadowOpacity: turboActive ? 0.6 : isMaxFire ? 0.5 : isOnFire ? 0.4 : isWarm ? 0.3 : 0,
+                shadowRadius: turboActive ? 12 : isMaxFire ? 10 : isOnFire ? 8 : 5,
+                shadowOffset: { width: 0, height: 0 },
+              },
+            ]}
+          >
+            <Flame
+              size={flameSize}
+              color={flameColor}
+              fill={isWarm ? flameColor : "transparent"}
+              strokeWidth={isWarm ? 1.2 : 2}
+            />
+          </Animated.View>
+        </View>
+        <Text
+          className="uppercase"
+          style={{ fontFamily: FONTS.display, fontSize: 12, letterSpacing: 1.8, color: labelColor }}
+        >
           {label}
         </Text>
-        {multiplier > 1 ? (
-          <Text
-            className="font-display text-[10px] tracking-[1.1px]"
-            style={{ color: flameColor, opacity: 0.85 }}
-          >
-            ×{multiplier} XP
-          </Text>
-        ) : null}
       </View>
 
-      <View className="w-[180px] h-[6px] rounded-full overflow-hidden bg-muted border border-border">
+      {multiplier > 1 ? (
+        <Text style={{ fontFamily: FONTS.display, fontSize: 10, letterSpacing: 0.5, color: COLORS.mutedForeground }}>
+          ×{multiplier} XP
+        </Text>
+      ) : null}
+
+      {/* Web: w-36 h-1.5 rounded-full bg-muted, tiered gradient fills */}
+      <View className="rounded-full overflow-hidden bg-muted" style={{ width: 144, height: 6 }}>
         <Animated.View
-          className="h-full rounded-full"
+          className="h-full rounded-full overflow-hidden"
           style={[
             fillStyle,
-            {
-              backgroundColor: flameColor,
-              shadowColor: flameColor,
-              shadowOpacity: turboActive ? 0.8 : 0.5,
-              shadowRadius: turboActive ? 16 : 8,
+            isMaxFire && {
+              shadowColor: COLORS.heatFire,
+              shadowOpacity: 0.35,
+              shadowRadius: 6,
               shadowOffset: { width: 0, height: 0 },
             },
           ]}
-        />
+        >
+          {barGradient ? (
+            <LinearGradient
+              colors={barGradient}
+              start={{ x: 0, y: 0.5 }}
+              end={{ x: 1, y: 0.5 }}
+              style={{ flex: 1 }}
+            />
+          ) : (
+            <View style={{ flex: 1, backgroundColor: barSolid }} />
+          )}
+        </Animated.View>
       </View>
     </View>
   );

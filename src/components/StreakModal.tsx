@@ -180,7 +180,7 @@ export default function StreakModal({
     >
       <View style={{ flex: 1 }}>
         <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(6,10,22,0.70)" }}
+          style={{ flex: 1, backgroundColor: "rgba(8,9,13,0.70)" }}
           onPress={onClose}
         />
         <View
@@ -237,7 +237,7 @@ export default function StreakModal({
             <View
               className="items-center rounded-[20px] py-6 mb-4"
               style={{
-                backgroundColor: dailyStreakActive ? "#081c2a" : COLORS.cardElevated,
+                backgroundColor: dailyStreakActive ? COLORS.neonCyan + "1a" : COLORS.cardElevated,
                 borderWidth: 1,
                 borderColor: dailyStreakActive ? COLORS.neonCyan + "44" : COLORS.border,
               }}
@@ -292,7 +292,7 @@ export default function StreakModal({
                       key={m}
                       className="flex-row items-center gap-[6px] px-3 py-2 rounded-[20px]"
                       style={{
-                        backgroundColor: unlocked ? "#081c2a" : COLORS.cardElevated,
+                        backgroundColor: unlocked ? COLORS.neonCyan + "1a" : COLORS.cardElevated,
                         borderWidth: 1,
                         borderColor: unlocked ? COLORS.neonCyan + "55" : COLORS.border,
                         opacity: unlocked ? 1 : 0.45,

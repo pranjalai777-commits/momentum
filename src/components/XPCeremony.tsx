@@ -1,26 +1,25 @@
-import { COLORS } from "@/constants/theme";
-
-// Epic "early finish" uses a gold/amber palette instead of flat hot pink
-const EPIC_GOLD = "#fbbf24";
-const EPIC_AMBER = "#f59e0b";
+import { COLORS, FONTS } from "@/constants/theme";
 import { hapticLevelUp } from "@/lib/haptics";
+import { fillCurve, springy } from "@/lib/easing";
 import { getLevel, getLevelProgress, getLevelTitle } from "@/lib/momentum";
 import { playLevelUp, playSmallReward } from "@/lib/sounds";
 import type { CompletionType } from "@/types";
+import GradientText from "@/components/ui/GradientText";
+import Shimmer from "@/components/ui/Shimmer";
 import { LinearGradient } from "expo-linear-gradient";
-import { TrendingUp } from "lucide-react-native";
 import { MotiView } from "moti";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import Animated, {
-  Easing,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withRepeat,
   withSequence,
   withTiming,
 } from "react-native-reanimated";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 type XPCeremonyProps = {
   xp: number;
@@ -35,527 +34,427 @@ const COMPLETION_MESSAGES: Record<CompletionType, { title: string; subtitle: str
   early: { title: "CRUSHED IT!", subtitle: "Finished before the timer — you're on fire!", emoji: "🔥" },
   "on-time": { title: "NICE SAVE!", subtitle: "Extended and delivered — respect!", emoji: "💪" },
   late: { title: "TASK DONE!", subtitle: "You got it done — that's what counts!", emoji: "✅" },
-  "gave-up": { title: "GOOD TRY!", subtitle: "You showed up. Next one will be stronger.", emoji: "🌱" },
+  "gave-up": { title: "GOOD TRY!", subtitle: "You showed up — next time you'll crush it!", emoji: "🌱" },
 };
 
-type CeremonyParticle = {
+type Phase = "enter" | "fill" | "levelup" | "exit";
+
+type ParticleSpec = {
   left: number;
   top: number;
   size: number;
-  duration: number;
-  delay: number;
   color: string;
+  delay: number;
 };
 
-type OrbitParticle = {
-  radius: number;
-  size: number;
-  duration: number;
-  delay: number;
-  color: string;
-  reverse: boolean;
-};
-
-type BurstParticle = {
-  angleRad: number;
-  distance: number;
-  size: number;
-  duration: number;
-  delay: number;
-  color: string;
-};
-
-function createParticles(count: number, epic: boolean): CeremonyParticle[] {
-  const palette = epic
-    ? [EPIC_GOLD, COLORS.neonPurple, EPIC_AMBER, COLORS.neonCyan]
-    : [COLORS.neonCyan, COLORS.neonPurple, COLORS.success];
+function createParticles(count: number, epic: boolean): ParticleSpec[] {
+  const epicPalette = [COLORS.neonCyan, COLORS.neonPurple, COLORS.neonPink, COLORS.success];
   return Array.from({ length: count }, (_, i) => ({
-    left: 8 + Math.random() * 84,
-    top: 16 + Math.random() * 68,
+    left: 10 + Math.random() * 80,
+    top: 20 + Math.random() * 60,
     size: 4 + Math.random() * (epic ? 10 : 6),
-    duration: 2200 + Math.random() * 1700,
-    delay: i * 90,
-    color: palette[i % palette.length],
+    color: epic
+      ? epicPalette[i % 4] + "b3" // /0.7
+      : (i % 2 === 0 ? COLORS.neonCyan : COLORS.neonPurple) + "99", // /0.6
+    delay: i * 150,
   }));
 }
 
-function createOrbitParticles(count: number, epic: boolean): OrbitParticle[] {
-  const palette = epic
-    ? [EPIC_GOLD, COLORS.neonCyan, COLORS.neonPurple, EPIC_AMBER]
-    : [COLORS.neonCyan, COLORS.neonPurple, COLORS.success];
-  return Array.from({ length: count }, (_, i) => ({
-    radius: 56 + Math.random() * (epic ? 92 : 70),
-    size: 3 + Math.random() * (epic ? 5 : 4),
-    duration: 2600 + Math.random() * 2600,
-    delay: i * 80,
-    color: palette[i % palette.length],
-    reverse: i % 2 === 0,
+// Web `ceremony-float` keyframes: rise + scale-in + fade-out, 3s ease-in-out infinite
+function CeremonyParticle({ spec, hidden }: { spec: ParticleSpec; hidden: boolean }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withDelay(
+      spec.delay,
+      withRepeat(withTiming(1, { duration: 3000 }), -1, false)
+    );
+  }, [progress, spec.delay]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: hidden ? 0 : interpolate(progress.value, [0, 0.2, 0.8, 1], [0, 0.7, 0.4, 0]),
+    transform: [
+      { translateY: interpolate(progress.value, [0, 0.2, 0.8, 1], [20, 0, -30, -50]) },
+      { scale: interpolate(progress.value, [0, 0.2, 0.8, 1], [0, 1, 0.8, 0.3]) },
+    ],
   }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          position: "absolute",
+          left: `${spec.left}%`,
+          top: `${spec.top}%`,
+          width: spec.size,
+          height: spec.size,
+          borderRadius: 999,
+          backgroundColor: spec.color,
+        },
+        style,
+      ]}
+    />
+  );
 }
 
-function createBurstParticles(count: number, epic: boolean): BurstParticle[] {
-  const palette = epic
-    ? [EPIC_GOLD, COLORS.neonCyan, COLORS.neonPurple, EPIC_AMBER]
-    : [COLORS.neonCyan, COLORS.neonPurple, COLORS.success];
-  return Array.from({ length: count }, (_, i) => {
-    const angleRad = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.25;
-    return {
-      angleRad,
-      distance: 64 + Math.random() * (epic ? 150 : 105),
-      size: 4 + Math.random() * (epic ? 7 : 5),
-      duration: 700 + Math.random() * 700,
-      delay: Math.random() * 120,
-      color: palette[i % palette.length],
-    };
-  });
-}
-
-function XPCeremony({
-  xp,
-  prevXp,
-  xpGained,
-  leveledUp,
-  completionType,
-  onFinish,
-}: XPCeremonyProps) {
+function XPCeremony({ xp, prevXp, xpGained, leveledUp, completionType, onFinish }: XPCeremonyProps) {
+  const [phase, setPhase] = useState<Phase>("enter");
   const [displayXp, setDisplayXp] = useState(prevXp);
-  const [phase, setPhase] = useState<"enter" | "charge" | "fill" | "burst" | "exit">("enter");
-  const xpIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef(0);
   const onFinishRef = useRef(onFinish);
   onFinishRef.current = onFinish;
-  const cardFloat = useSharedValue(0);
-  const cardScale = useSharedValue(0.94);
-  const glowPulse = useSharedValue(0);
-  const progressWidth = useSharedValue(getLevelProgress(prevXp).progress);
 
   const level = getLevel(xp);
   const prevLevel = getLevel(prevXp);
-  const levelsGained = Math.max(1, level - prevLevel); // at least 1 when leveledUp
-  const PER_LEVEL_MS = 480;
-  const LEVEL_RESET_MS = 80;
-  const FINAL_FILL_MS = 520;
-  const totalBarMs = leveledUp
-    ? levelsGained * (PER_LEVEL_MS + LEVEL_RESET_MS) + FINAL_FILL_MS
-    : 1000;
   const title = getLevelTitle(level);
+  const { next, progress } = getLevelProgress(displayXp);
+  const prevProgress = useMemo(() => getLevelProgress(prevXp), [prevXp]);
   const msg = COMPLETION_MESSAGES[completionType];
-  const progress = useMemo(() => getLevelProgress(displayXp), [displayXp]);
+
   const isEpic = completionType === "early";
-  const particleCount = completionType === "gave-up" ? 6 : isEpic ? 14 : 10;
+  const particleCount = isEpic ? 16 : completionType === "gave-up" ? 4 : 8;
   const particles = useMemo(() => createParticles(particleCount, isEpic), [particleCount, isEpic]);
-  const orbitParticles = useMemo(
-    () => createOrbitParticles(isEpic ? 8 : 6, isEpic),
-    [isEpic]
-  );
-  const burstParticles = useMemo(
-    () => createBurstParticles(isEpic ? 16 : 12, isEpic),
-    [isEpic]
-  );
 
-  const cardAnimatedStyle = useAnimatedStyle(() => {
-    const y = interpolate(cardFloat.value, [0, 1], [0, -8]);
-    return {
-      transform: [{ translateY: y }, { scale: cardScale.value }],
-    };
-  });
-
-  const glowAnimatedStyle = useAnimatedStyle(() => {
-    const pulseScale = interpolate(glowPulse.value, [0, 1], [0.95, 1.14]);
-    const pulseOpacity = interpolate(glowPulse.value, [0, 1], [0.18, isEpic ? 0.4 : 0.3]);
-    return {
-      opacity: phase === "exit" ? 0 : pulseOpacity,
-      transform: [{ scale: pulseScale }],
-    };
-  });
-
-  const progressAnimatedStyle = useAnimatedStyle(() => ({
-    width: `${Math.max(0, Math.min(progressWidth.value, 100))}%`,
-  }));
-
-
-  useEffect(() => {
-    cardFloat.value = withRepeat(
-      withTiming(1, { duration: 2200, easing: Easing.inOut(Easing.sin) }),
-      -1,
-      true
-    );
-    glowPulse.value = withRepeat(
-      withTiming(1, { duration: isEpic ? 1200 : 1500, easing: Easing.inOut(Easing.quad) }),
-      -1,
-      true
-    );
-  }, [cardFloat, glowPulse, isEpic]);
-
+  // Web phase machine: fill @800ms, levelup @2400ms (+2000ms), finish @3200/4800ms
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
-    const FILL_START_MS = 1080;
-    const burstDuration = leveledUp ? 1750 : 1050;
-    const burstStartMs = leveledUp ? FILL_START_MS + totalBarMs + 120 : 2400;
-    const onFinishMs = burstStartMs + burstDuration + (leveledUp ? 600 : 500);
+    timers.push(setTimeout(() => setPhase("fill"), 800));
     timers.push(
       setTimeout(() => {
-        setPhase("charge");
-        cardScale.value = withTiming(1.02, { duration: 420, easing: Easing.out(Easing.cubic) });
-      }, 520)
-    );
-    timers.push(setTimeout(() => { setPhase("fill"); }, FILL_START_MS));
-    timers.push(
-      setTimeout(() => {
-        setPhase("burst");
-        cardScale.value = withSequence(
-          withTiming(1.06, { duration: 180, easing: Easing.out(Easing.exp) }),
-          withTiming(1.0, { duration: 320, easing: Easing.out(Easing.cubic) })
-        );
-        if (leveledUp || isEpic) {
+        if (leveledUp) {
+          setPhase("levelup");
           playLevelUp();
           hapticLevelUp();
+          timers.push(setTimeout(() => setPhase("exit"), 2000));
+        } else {
+          setPhase("exit");
         }
-        timers.push(setTimeout(() => { setPhase("exit"); }, burstDuration));
-      }, burstStartMs)
+      }, 2400)
     );
-    timers.push(setTimeout(() => { onFinishRef.current(); }, onFinishMs));
-    return () => {
-      timers.forEach(clearTimeout);
-      if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);
-    };
-  }, [cardScale, isEpic, leveledUp]); // onFinish intentionally excluded — accessed via ref
+    timers.push(setTimeout(() => onFinishRef.current(), leveledUp ? 4800 : 3200));
+    return () => timers.forEach(clearTimeout);
+  }, [leveledUp]);
 
-  useEffect(() => {
-    if (phase === "fill") playSmallReward();
-  }, [phase]);
-
+  // XP count-up: 1200ms cubic ease-out (web rAF loop)
   useEffect(() => {
     if (phase !== "fill") return;
-    const steps = 40;
-    let step = 0;
-
-    if (leveledUp) {
-      // For each level crossed: fill to 100%, flash reset. Then fill final level's progress.
-      // e.g. level 1→3: fill100 → reset → fill100 → reset → fillNewProgress
-      const newProgress = getLevelProgress(xp).progress;
-      const segments: number[] = [];
-      for (let i = 0; i < levelsGained; i++) {
-        segments.push(withTiming(100, { duration: PER_LEVEL_MS, easing: Easing.out(Easing.cubic) }));
-        segments.push(withTiming(0, { duration: LEVEL_RESET_MS }));
-      }
-      segments.push(withTiming(newProgress, { duration: FINAL_FILL_MS, easing: Easing.out(Easing.cubic) }));
-      progressWidth.value = withSequence(...segments);
-    } else {
-      progressWidth.value = withTiming(getLevelProgress(xp).progress, {
-        duration: totalBarMs,
-        easing: Easing.out(Easing.cubic),
-      });
-    }
-    if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);
-    xpIntervalRef.current = setInterval(() => {
-      step += 1;
-      const t = Math.min(1, step / steps);
+    playSmallReward();
+    startRef.current = Date.now();
+    const duration = 1200;
+    const animate = () => {
+      const elapsed = Date.now() - startRef.current;
+      const t = Math.min(elapsed / duration, 1);
       const eased = 1 - (1 - t) ** 3;
       setDisplayXp(Math.round(prevXp + (xp - prevXp) * eased));
-      if (t >= 1 && xpIntervalRef.current) {
-        clearInterval(xpIntervalRef.current);
-        xpIntervalRef.current = null;
-      }
-    }, Math.round(totalBarMs / steps));
-    return () => {
-      if (xpIntervalRef.current) clearInterval(xpIntervalRef.current);
+      if (t < 1) rafRef.current = requestAnimationFrame(animate);
     };
-  }, [phase, prevXp, progressWidth, xp, levelsGained, leveledUp, totalBarMs]); // PER_LEVEL_MS/LEVEL_RESET_MS/FINAL_FILL_MS are stable constants
+    rafRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, [phase, prevXp, xp]);
 
+  // Level badge burst (web ceremony-level-burst: scale 1 → 1.2 → 1, 0.8s springy)
+  const badgeScale = useSharedValue(1);
   useEffect(() => {
-    if (phase === "exit") {
-      cardScale.value = withTiming(0.88, { duration: 420, easing: Easing.in(Easing.cubic) });
+    if (phase === "levelup") {
+      badgeScale.value = withSequence(
+        withTiming(1.2, { duration: 320, easing: springy }),
+        withTiming(1, { duration: 480, easing: springy })
+      );
     }
-  }, [cardScale, phase]);
+  }, [badgeScale, phase]);
+  const badgeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: badgeScale.value }],
+  }));
 
-  const shownLevel = phase === "burst" || phase === "exit" ? level : prevLevel;
+  // +XP pop (web ceremony-xp-appear: scale 0.5→1.2→1, translateY 10→-5→0, 0.6s springy)
+  const xpPop = useSharedValue(0);
+  useEffect(() => {
+    if (phase === "fill") {
+      xpPop.value = withTiming(1, { duration: 600, easing: springy });
+    }
+  }, [phase, xpPop]);
+  const xpPopStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(xpPop.value, [0, 0.6, 1], [0, 1, 1]),
+    transform: [
+      { scale: interpolate(xpPop.value, [0, 0.6, 1], [0.5, 1.2, 1]) },
+      { translateY: interpolate(xpPop.value, [0, 0.6, 1], [10, -5, 0]) },
+    ],
+  }));
+
+  // Bar fill: width follows displayXp via 1.2s fillCurve-style count-up; level
+  // crossings wrap naturally since progress is per-level.
+  const currentProgress = phase === "enter" ? prevProgress.progress : progress;
+  const barWidth = useSharedValue(prevProgress.progress);
+  useEffect(() => {
+    barWidth.value = withTiming(currentProgress, {
+      duration: phase === "enter" ? 0 : 120,
+      easing: fillCurve,
+    });
+  }, [barWidth, currentProgress, phase]);
+  const barFillStyle = useAnimatedStyle(() => ({
+    width: `${Math.max(0, Math.min(barWidth.value, 100))}%`,
+  }));
+
+  const displayLevel = phase === "levelup" || phase === "exit" ? level : prevLevel;
+  const showLevelGlow = phase === "levelup";
+  const filling = phase === "fill" || phase === "levelup";
 
   return (
-    <View className="absolute inset-0 z-[100] items-center justify-center bg-[rgba(6,10,22,0.97)] px-4 overflow-hidden">
-      <LinearGradient
-        colors={isEpic ? ["rgba(251,191,36,0.16)", "rgba(136,51,255,0.10)", "rgba(6,10,22,0.96)"] : ["rgba(0,217,245,0.14)", "rgba(136,51,255,0.10)", "rgba(6,10,22,0.96)"]}
-        start={{ x: 0.5, y: 0 }}
-        end={{ x: 0.5, y: 1 }}
-        className="absolute inset-0"
-      />
-
-      <Animated.View
-        style={[
-          {
-            position: "absolute",
-            width: 420,
-            height: 420,
-            borderRadius: 9999,
-            backgroundColor: isEpic ? "rgba(251,191,36,0.14)" : "rgba(0,217,245,0.12)",
-          },
-          glowAnimatedStyle,
-        ]}
-      />
-
+    <MotiView
+      from={{ opacity: 0 }}
+      animate={{ opacity: phase === "exit" ? 0 : 1 }}
+      transition={{ type: "timing", duration: 600 }}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 100,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: "rgba(8,9,13,0.95)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Radial background — web: epic cyan/purple ellipse; levelup purple ellipse */}
       <MotiView
-        from={{ opacity: 0.28, scale: 0.9 }}
-        animate={{ opacity: phase === "exit" ? 0 : 0.65, scale: phase === "exit" ? 1.04 : phase === "burst" ? 1.26 : 1.04 }}
-        transition={{ type: "timing", duration: phase === "exit" ? 320 : phase === "burst" ? 720 : 1800 }}
-        style={{
-          position: "absolute",
-          width: 580,
-          height: 580,
-          borderRadius: 9999,
-          borderWidth: 1,
-          borderColor: isEpic ? EPIC_GOLD + "50" : COLORS.neonCyan + "40",
-        }}
-      />
-
-      <MotiView
-        from={{ opacity: 0.15, scale: 0.7 }}
-        animate={{ opacity: phase === "exit" ? 0 : phase === "burst" ? 0.52 : 0.24, scale: phase === "exit" ? 1.04 : phase === "burst" ? 1.5 : 1.04 }}
-        transition={{ type: "timing", duration: phase === "exit" ? 320 : phase === "burst" ? 560 : 1900 }}
-        style={{
-          position: "absolute",
-          width: 760,
-          height: 760,
-          borderRadius: 9999,
-          borderWidth: phase === "burst" ? 2 : 1,
-          borderColor: isEpic ? EPIC_GOLD + "66" : COLORS.neonCyan + "50",
-        }}
-      />
-
-      <View className="absolute inset-0 pointer-events-none">
-        {particles.map((particle, index) => (
-          <MotiView
-            key={`${index}-${particle.left.toFixed(2)}`}
-            from={{ opacity: 0, translateY: 12, scale: 0.7 }}
-            animate={{ opacity: phase === "exit" ? 0 : 0.95, translateY: -26, scale: 1.25 }}
-            transition={{
-              type: "timing",
-              duration: phase === "exit" ? 180 : particle.duration,
-              delay: phase === "exit" ? 0 : particle.delay,
-              loop: phase !== "exit",
-              repeatReverse: phase !== "exit",
-            }}
-            style={{
-              position: "absolute",
-              left: `${particle.left}%`,
-              top: `${particle.top}%`,
-              width: particle.size,
-              height: particle.size,
-              borderRadius: 999,
-              backgroundColor: particle.color,
-            }}
-          />
-        ))}
-      </View>
-
-      <View className="absolute inset-0 items-center justify-center pointer-events-none">
-        {orbitParticles.map((particle, index) => (
-          <MotiView
-            key={`orbit-${index}`}
-            from={{ opacity: 0, rotate: "0deg" }}
-            animate={{ opacity: phase === "exit" ? 0 : 0.82, rotate: particle.reverse ? "-360deg" : "360deg" }}
-            transition={{
-              type: "timing",
-              duration: phase === "exit" ? 180 : particle.duration,
-              delay: phase === "exit" ? 0 : particle.delay,
-              loop: phase !== "exit",
-            }}
-            style={{ position: "absolute", width: 1, height: 1 }}
-          >
-            <MotiView
-              from={{ translateX: particle.radius, scale: 0.75 }}
-              animate={{ translateX: particle.radius, scale: phase === "burst" ? 1.15 : 1 }}
-              transition={{
-                type: "timing",
-                duration: 220,
-                delay: index * 18,
-              }}
-              style={{
-                width: particle.size,
-                height: particle.size,
-                borderRadius: 999,
-                backgroundColor: particle.color,
-              }}
-            />
-          </MotiView>
-        ))}
-      </View>
-
-      <View className="absolute inset-0 items-center justify-center pointer-events-none">
-        {burstParticles.map((particle, index) => {
-          const x = Math.cos(particle.angleRad) * particle.distance;
-          const y = Math.sin(particle.angleRad) * particle.distance;
-          return (
-            <MotiView
-              key={`burst-${index}`}
-              from={{ opacity: 0, scale: 0.2, translateX: 0, translateY: 0 }}
-              animate={{
-                opacity: phase === "burst" ? 0.95 : 0,
-                scale: phase === "burst" ? 1 : 0.2,
-                translateX: phase === "burst" ? x : 0,
-                translateY: phase === "burst" ? y : 0,
-              }}
-              transition={{
-                type: "timing",
-                duration: phase === "exit" ? 150 : particle.duration,
-                delay: phase === "exit" ? 0 : particle.delay,
-              }}
-              style={{
-                position: "absolute",
-                width: particle.size,
-                height: particle.size,
-                borderRadius: 999,
-                backgroundColor: particle.color,
-              }}
-            />
-          );
-        })}
-      </View>
-
-      <MotiView
-        from={{ opacity: 0, scale: 0.96, translateY: 18 }}
-        animate={{
-          opacity: phase === "exit" ? 0 : 1,
-          scale: phase === "burst" ? (leveledUp ? 1.04 : 1.02) : 1,
-          translateY: phase === "exit" ? 16 : 0,
-        }}
-        transition={{ type: "timing", duration: phase === "exit" ? 400 : 350 }}
+        animate={{ opacity: isEpic ? 1 : 0 }}
+        transition={{ type: "timing", duration: 1000 }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        pointerEvents="none"
       >
-        <Animated.View style={cardAnimatedStyle}>
-          <View
-            style={{
-              width: "100%",
-              maxWidth: 390,
-              borderRadius: 28,
-              borderWidth: 1,
-              borderColor: isEpic ? EPIC_GOLD + "55" : COLORS.border,
-              backgroundColor: COLORS.cardElevated,
-              paddingHorizontal: 20,
-              paddingVertical: 24,
-              gap: 18,
-                shadowColor: isEpic ? EPIC_AMBER : COLORS.neonCyan,
-                shadowOpacity: phase === "burst" ? 0.2 : 0.14,
-                shadowRadius: phase === "burst" ? 32 : 24,
+        <Svg width="100%" height="100%">
+          <Defs>
+            <RadialGradient id="ceremony-epic" cx="50%" cy="50%" r="70%">
+              <Stop offset="0%" stopColor={COLORS.neonCyan} stopOpacity="0.15" />
+              <Stop offset="40%" stopColor={COLORS.neonPurple} stopOpacity="0.08" />
+              <Stop offset="70%" stopColor={COLORS.neonPurple} stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#ceremony-epic)" />
+        </Svg>
+      </MotiView>
+      <MotiView
+        animate={{ opacity: !isEpic && leveledUp && (phase === "levelup" || phase === "exit") ? 1 : 0 }}
+        transition={{ type: "timing", duration: 1000 }}
+        style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
+        pointerEvents="none"
+      >
+        <Svg width="100%" height="100%">
+          <Defs>
+            <RadialGradient id="ceremony-levelup" cx="50%" cy="50%" r="70%">
+              <Stop offset="0%" stopColor={COLORS.neonPurple} stopOpacity="0.25" />
+              <Stop offset="70%" stopColor={COLORS.neonPurple} stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#ceremony-levelup)" />
+        </Svg>
+      </MotiView>
+
+      {/* Floating particles */}
+      <View pointerEvents="none" style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}>
+        {particles.map((spec, i) => (
+          <CeremonyParticle key={i} spec={spec} hidden={phase === "exit"} />
+        ))}
+      </View>
+
+      {/* Content — web ceremony-content-enter: rise from 60px, scale 0.8 → 1, 0.7s springy */}
+      <MotiView
+        from={{ opacity: 0, translateY: 60, scale: 0.8 }}
+        animate={{ opacity: 1, translateY: 0, scale: 1 }}
+        transition={{ type: "timing", duration: 700, easing: springy }}
+        style={{ alignItems: "center", gap: 24, width: "100%", maxWidth: 384, paddingHorizontal: 24 }}
+      >
+        {/* Completion message */}
+        <MotiView
+          from={{ opacity: 0, translateY: 8 }}
+          animate={{ opacity: 1, translateY: 0 }}
+          transition={{ type: "timing", duration: 500 }}
+          style={{ alignItems: "center", gap: 4 }}
+        >
+          <Text style={{ fontSize: 30, lineHeight: 38 }}>{msg.emoji}</Text>
+          <GradientText
+            text={msg.title}
+            fontSize={24}
+            fontFamily={FONTS.display}
+            colors={isEpic ? [COLORS.neonCyan, COLORS.success] : [COLORS.foreground, COLORS.neonCyan]}
+            stopOpacities={isEpic ? [1, 1] : [1, 0.7]}
+          />
+          <Text style={{ color: COLORS.mutedForeground, fontFamily: FONTS.body, fontSize: 14, textAlign: "center" }}>
+            {msg.subtitle}
+          </Text>
+        </MotiView>
+
+        {/* Level badge */}
+        <View style={{ alignItems: "center", gap: 8 }}>
+          <Animated.View style={badgeAnimatedStyle}>
+            <View
+              style={{
+                width: 80,
+                height: 80,
+                borderRadius: 9999,
+                overflow: "hidden",
+                shadowColor: showLevelGlow ? COLORS.neonPurple : isEpic ? COLORS.neonCyan : COLORS.neonPurple,
+                shadowOpacity: showLevelGlow ? 0.5 : isEpic ? 0.25 : 0.15,
+                shadowRadius: showLevelGlow ? 40 : isEpic ? 30 : 20,
                 shadowOffset: { width: 0, height: 0 },
               }}
             >
-            <View className="items-center gap-1">
-              <Text className="text-[40px]">{msg.emoji}</Text>
-              <Text
-                className="text-foreground font-display text-[30px]"
-                style={{ color: isEpic ? EPIC_GOLD : COLORS.foreground }}
+              <LinearGradient
+                colors={
+                  leveledUp && showLevelGlow
+                    ? [COLORS.neonCyan, COLORS.neonPurple, COLORS.neonPink]
+                    : [COLORS.secondary, COLORS.muted]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
               >
-                {msg.title}
-              </Text>
-              <Text className="text-muted-foreground font-sans text-[13px] text-center">{msg.subtitle}</Text>
-              {/* {isEpic ? (
-                <View
-                  className="mt-1 px-3 py-[5px] rounded-full border"
-                  style={{ borderColor: COLORS.success + "55", backgroundColor: COLORS.successDark }}
-                >
-                  <Text className="text-success font-display text-[11px] tracking-[1px]">⚡ EARLY FINISH BONUS</Text>
-                </View>
-              ) : null} */}
+                <GradientText
+                  text={String(displayLevel)}
+                  fontSize={30}
+                  fontFamily={FONTS.display}
+                  colors={[COLORS.foreground, COLORS.neonCyan]}
+                />
+              </LinearGradient>
             </View>
-
-            <View className="items-center gap-2" style={{ width: "100%" }}>
-              <View
-                style={[
-                  {
-                    width: 90,
-                    height: 90,
-                    borderRadius: 99,
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: isEpic ? "#1a1200" : "#0c1e33",
-                    borderWidth: 2,
-                    borderColor: isEpic ? EPIC_GOLD + "88" : COLORS.neonCyan + "55",
-                  },
-                  phase === "burst" && {
-                    borderColor: isEpic ? EPIC_GOLD : COLORS.neonCyan,
-                    shadowColor: isEpic ? EPIC_AMBER : COLORS.neonCyan,
-                    shadowOpacity: 0.72,
-                    shadowRadius: 26,
-                    shadowOffset: { width: 0, height: 0 },
-                  },
-                ]}
-              >
-                <Text className="font-display text-[36px]" style={{ color: isEpic ? EPIC_GOLD : COLORS.neonCyan }}>
-                  {shownLevel}
-                </Text>
-              </View>
-              <Text className="text-muted-foreground font-display text-[11px] tracking-[1.4px]" style={{ textAlign: "center" }}>{title}</Text>
-              {leveledUp && phase === "burst" ? (
-                <MotiView
-                  from={{ opacity: 0, scale: 0.76, translateY: 8 }}
-                  animate={{ opacity: 1, scale: 1, translateY: 0 }}
-                  transition={{ type: "spring", damping: 11, stiffness: 170 }}
-                  style={{
-                    alignSelf: "center",
-                    paddingHorizontal: 14,
-                    paddingVertical: 6,
-                    borderRadius: 9999,
-                    backgroundColor: isEpic ? "#1a1400" : "#061c2e",
-                    borderWidth: 1,
-                    borderColor: (isEpic ? EPIC_GOLD : COLORS.neonCyan) + "66",
-                  }}
-                >
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                    <TrendingUp size={16} color={isEpic ? EPIC_GOLD : COLORS.neonCyan} strokeWidth={2.5} />
-                    <Text
-                      className="font-display text-[16px] tracking-[1px]"
-                      style={{ color: isEpic ? EPIC_GOLD : COLORS.neonCyan, lineHeight: 20, includeFontPadding: false }}
-                    >
-                      LEVEL UP!
-                    </Text>
-                  </View>
-                </MotiView>
-              ) : null}
-            </View>
-
-            <View className="h-3 rounded-full overflow-hidden bg-muted border border-border">
-              <Animated.View
-                className="h-full rounded-full"
-                style={[
-                  progressAnimatedStyle,
-                  {
-                    backgroundColor: isEpic ? EPIC_AMBER : COLORS.neonCyan,
-                    shadowColor: isEpic ? EPIC_AMBER : COLORS.neonCyan,
-                    shadowOpacity: phase === "burst" ? 0.85 : 0.62,
-                    shadowRadius: phase === "burst" ? 14 : 8,
-                    shadowOffset: { width: 0, height: 0 },
-                  },
-                ]}
-              />
-            </View>
-
-            <View className="flex-row justify-between items-center">
-              <Text className="text-foreground font-display text-[17px]">
-                {displayXp} <Text className="text-muted-foreground font-sans text-[13px]">/ {progress.next} XP</Text>
-              </Text>
-              <View
-                className="px-3 py-[5px] rounded-full border"
+            {/* Level-up expanding ring (web ceremony-ring-expand: scale 1 → 2.5, fade out, 1.2s) */}
+            {showLevelGlow ? (
+              <MotiView
+                from={{ scale: 1, opacity: 0.8 }}
+                animate={{ scale: 2.5, opacity: 0 }}
+                transition={{ type: "timing", duration: 1200 }}
+                pointerEvents="none"
                 style={{
-                  borderColor: isEpic ? EPIC_GOLD + "55" : COLORS.success + "55",
-                  backgroundColor: isEpic ? "#1a1100" : "#0a2416",
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderRadius: 9999,
+                  borderWidth: 2,
+                  borderColor: COLORS.neonCyan + "99",
+                }}
+              />
+            ) : null}
+          </Animated.View>
+          <Text
+            style={{
+              fontFamily: FONTS.display,
+              fontSize: 12,
+              letterSpacing: 0.6,
+              textTransform: "uppercase",
+              color: COLORS.mutedForeground,
+            }}
+          >
+            {title}
+          </Text>
+          {leveledUp && showLevelGlow ? (
+            <MotiView
+              from={{ opacity: 0, scale: 0.3 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ type: "timing", duration: 800, easing: springy }}
+            >
+              <Text
+                style={{
+                  fontFamily: FONTS.display,
+                  fontSize: 24,
+                  color: COLORS.foreground,
+                  textShadowColor: COLORS.neonPurple + "99",
+                  textShadowRadius: 15,
+                  textShadowOffset: { width: 0, height: 0 },
                 }}
               >
-                <Text
-                  className="font-display text-[20px]"
-                  style={{
-                    color: isEpic ? EPIC_GOLD : COLORS.success,
-                    shadowColor: isEpic ? EPIC_AMBER : COLORS.success,
-                    shadowOpacity: 0.4,
-                    shadowRadius: 8,
-                    shadowOffset: { width: 0, height: 0 },
-                  }}
-                >
-                  +{xpGained} XP
-                </Text>
-              </View>
-            </View>
+                LEVEL UP!
+              </Text>
+            </MotiView>
+          ) : null}
+        </View>
+
+        {/* XP bar */}
+        <View style={{ width: "100%", gap: 12 }}>
+          <View
+            style={{
+              height: 16,
+              borderRadius: 9999,
+              backgroundColor: COLORS.muted,
+              overflow: "hidden",
+              shadowColor: COLORS.neonCyan,
+              shadowOpacity: filling ? 0.2 : 0,
+              shadowRadius: 15,
+              shadowOffset: { width: 0, height: 0 },
+            }}
+          >
+            <Animated.View style={[barFillStyle, { height: "100%", borderRadius: 9999, overflow: "hidden" }]}>
+              <LinearGradient
+                colors={
+                  isEpic
+                    ? [COLORS.success, COLORS.neonCyan, COLORS.neonPurple]
+                    : [COLORS.neonCyan, COLORS.neonPurple]
+                }
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={{ flex: 1 }}
+              />
+              {filling ? <Shimmer /> : null}
+            </Animated.View>
           </View>
-        </Animated.View>
+
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+            <Text style={{ fontFamily: FONTS.display, fontSize: 16, color: COLORS.foreground }}>
+              {displayXp}{" "}
+              <Text style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.mutedForeground }}>
+                / {next} XP
+              </Text>
+            </Text>
+            <Animated.View style={xpPopStyle}>
+              <GradientText
+                text={`+${xpGained} XP`}
+                fontSize={20}
+                fontFamily={FONTS.display}
+                colors={
+                  completionType === "gave-up"
+                    ? [COLORS.neonPurple, COLORS.mutedForeground]
+                    : [COLORS.success, COLORS.neonCyan]
+                }
+              />
+            </Animated.View>
+          </View>
+
+          {/* Early-finish bonus chip */}
+          {isEpic && filling ? (
+            <MotiView
+              from={{ opacity: 0, translateY: 8 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "timing", duration: 500 }}
+              style={{ alignItems: "center" }}
+            >
+              <Text
+                style={{
+                  fontFamily: FONTS.display,
+                  fontSize: 12,
+                  letterSpacing: 0.6,
+                  color: COLORS.success,
+                  backgroundColor: COLORS.success + "26",
+                  borderWidth: 1,
+                  borderColor: COLORS.success + "4d",
+                  borderRadius: 9999,
+                  paddingHorizontal: 12,
+                  paddingVertical: 4,
+                  overflow: "hidden",
+                }}
+              >
+                ⚡ EARLY FINISH BONUS
+              </Text>
+            </MotiView>
+          ) : null}
+        </View>
       </MotiView>
-    </View>
+    </MotiView>
   );
 }
 

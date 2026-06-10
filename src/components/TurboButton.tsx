@@ -1,4 +1,4 @@
-import { COLORS } from "@/constants/theme";
+import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
 import { hapticTurboActivate } from "@/lib/haptics";
 import { canActivateTurbo, getTurboRemainingMs, isTurboActive } from "@/lib/momentum";
 import { playEpicSuccess } from "@/lib/sounds";
@@ -29,6 +29,22 @@ function formatTime(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+// Web .turbo-button-ready / .turbo-button-active pill: px-3 py-1.5, text-xs,
+// tracking-wider, uppercase, rounded-full
+const PILL = {
+  flexDirection: "row" as const,
+  alignItems: "center" as const,
+  gap: 6,
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+};
+const LABEL = {
+  fontFamily: FONTS.display,
+  fontSize: 12,
+  letterSpacing: 0.6,
+  textTransform: "uppercase" as const,
+};
+
 function TurboButton({ data, onActivate }: TurboButtonProps) {
   const active = isTurboActive(data);
   const canUse = canActivateTurbo(data);
@@ -40,6 +56,8 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
       shimmer.value = 0;
       return;
     }
+    // Web turbo-button-shimmer: background-position sweep, 2s ease-in-out infinite —
+    // approximated by cross-fading two halves of the 3-stop gradient
     shimmer.value = withRepeat(
       withTiming(1, { duration: 2000, easing: Easing.inOut(Easing.quad) }),
       -1,
@@ -49,75 +67,49 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
     return () => clearInterval(timer);
   }, [active, data, shimmer]);
 
-  // Shimmer layer: pink→purple fades in/out over the amber→pink base
   const shimmerLayerStyle = useAnimatedStyle(() => ({
-    opacity: shimmer.value * 0.85,
+    opacity: shimmer.value,
   }));
-  // Glow breathes gently in sync (0.35 → 0.50)
   const glowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: 0.35 + shimmer.value * 0.15,
+    shadowOpacity: 0.4 + shimmer.value * 0.15,
   }));
-
-  // LinearGradient from expo-linear-gradient is NOT an RN primitive and does not
-  // support NativeWind className. All styles must be passed via the style prop.
-  const pillStyle = {
-    flexDirection: "row" as const,
-    alignItems: "center" as const,
-    gap: 6,
-    borderRadius: 9999,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-  };
 
   if (active) {
     return (
-      // Outer shadow matches web: 0 0 15px #FF3377@0.4, gently breathes
+      // Web: box-shadow 0 0 15px hsl(340 100% 60% / 0.4), 0 0 30px hsl(280 100% 65% / 0.2)
       <Animated.View
         style={[
           glowStyle,
           {
             borderRadius: 9999,
-            shadowColor: "#FF3377",
+            shadowColor: "#ff3377",
             shadowRadius: 15,
             shadowOffset: { width: 0, height: 0 },
           },
         ]}
       >
-        <View
-          style={{
-            overflow: "hidden",
-            borderRadius: 9999,
-            paddingHorizontal: 18,
-            paddingVertical: 10,
-          }}
-        >
-          {/* Layer 1 — base: amber → hot-pink (always visible) */}
+        <View style={{ overflow: "hidden", borderRadius: 9999 }}>
+          {/* Layer 1 — gold → pink (first two stops) */}
           <LinearGradient
-            colors={["#FFC519", "#FF3377"]}
+            colors={[GRADIENTS.turboActive[0], GRADIENTS.turboActive[1]]}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
+            end={{ x: 1, y: 1 }}
             style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
           />
-          {/* Layer 2 — shimmer: hot-pink → purple (cross-fades in/out, 2 s) */}
+          {/* Layer 2 — pink → purple (last two stops), cross-fades for shimmer */}
           <Animated.View
-            style={[
-              shimmerLayerStyle,
-              { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
-            ]}
+            style={[shimmerLayerStyle, { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }]}
           >
             <LinearGradient
-              colors={["#FF3377", "#C34CFF"]}
+              colors={[GRADIENTS.turboActive[1], GRADIENTS.turboActive[2]]}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
+              end={{ x: 1, y: 1 }}
               style={{ flex: 1 }}
             />
           </Animated.View>
-          {/* Content on top */}
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <View style={PILL}>
             <Zap size={14} color="#ffffff" fill="#ffffff" />
-            <Text className="text-white font-display text-[13px] tracking-[1.2px]">
-              TURBO {formatTime(remaining)}
-            </Text>
+            <Text style={[LABEL, { color: "#ffffff" }]}>TURBO {formatTime(remaining)}</Text>
           </View>
         </View>
       </Animated.View>
@@ -126,9 +118,9 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
 
   if (!canUse) {
     return (
-      <View className="flex-row items-center gap-[6px] rounded-full px-4 py-[9px] border bg-[#131929] border-[#1e2a45]">
-        <Zap size={14} color={COLORS.mutedForeground} />
-        <Text className="text-muted-foreground font-display text-[12px] tracking-[1.1px]">TURBO USED</Text>
+      <View style={[PILL, { borderRadius: 9999, backgroundColor: COLORS.muted }]}>
+        <Zap size={14} color={COLORS.mutedForeground + "66"} />
+        <Text style={[LABEL, { color: COLORS.mutedForeground + "66" }]}>TURBO USED</Text>
       </View>
     );
   }
@@ -143,22 +135,22 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
       style={({ pressed }) => [
         {
           borderRadius: 9999,
-          shadowColor: "#f0ad00",
-          shadowOpacity: 0.55,
-          shadowRadius: 14,
+          shadowColor: GRADIENTS.turboReady[0],
+          shadowOpacity: 0.3,
+          shadowRadius: 12,
           shadowOffset: { width: 0, height: 0 },
         },
-        pressed && { transform: [{ scale: 0.97 }] },
+        pressed && { transform: [{ scale: 0.95 }] },
       ]}
     >
       <LinearGradient
-        colors={["#f0ad00", "#f07000"]}
+        colors={GRADIENTS.turboReady}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        style={pillStyle}
+        end={{ x: 1, y: 1 }}
+        style={[PILL, { borderRadius: 9999 }]}
       >
-        <Zap size={15} color="#071018" />
-        <Text className="text-[#071018] font-display text-[14px] tracking-[1.3px]">TURBO</Text>
+        <Zap size={14} color="#0d0d0d" />
+        <Text style={[LABEL, { color: "#0d0d0d" }]}>TURBO</Text>
       </LinearGradient>
     </Pressable>
   );

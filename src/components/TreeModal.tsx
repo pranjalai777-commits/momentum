@@ -61,7 +61,7 @@ export default function TreeModal({ visible, onClose }: TreeModalProps) {
   const treeHeaderColor = isDead
     ? "#ff8f8f"
     : isCritical
-      ? "#f0ad00"
+      ? "#ffc61a"
       : COLORS.success;
 
   return (
@@ -74,7 +74,7 @@ export default function TreeModal({ visible, onClose }: TreeModalProps) {
     >
       <View style={{ flex: 1 }}>
         <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(6,10,22,0.70)" }}
+          style={{ flex: 1, backgroundColor: "rgba(8,9,13,0.70)" }}
           onPress={onClose}
         />
         <View
@@ -87,7 +87,7 @@ export default function TreeModal({ visible, onClose }: TreeModalProps) {
             borderTopLeftRadius: 24,
             borderTopRightRadius: 24,
             borderTopWidth: 1,
-            borderColor: isCritical || isDead ? "#f07000aa" : COLORS.border,
+            borderColor: isCritical || isDead ? "#ff8229aa" : COLORS.border,
             maxHeight: "90%",
           }}
         >
@@ -98,7 +98,7 @@ export default function TreeModal({ visible, onClose }: TreeModalProps) {
                 width: 36,
                 height: 4,
                 borderRadius: 2,
-                backgroundColor: isCritical || isDead ? "#f07000" : COLORS.border,
+                backgroundColor: isCritical || isDead ? "#ff8229" : COLORS.border,
                 opacity: 0.7,
               }}
             />
@@ -141,14 +141,14 @@ export default function TreeModal({ visible, onClose }: TreeModalProps) {
                 style={{
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: "#f07000aa",
+                  borderColor: "#ff8229aa",
                   backgroundColor: "rgba(240,112,0,0.10)",
                   paddingHorizontal: 12,
                   paddingVertical: 8,
                   marginBottom: 12,
                 }}
               >
-                <Text style={{ color: "#f0ad00", fontFamily: "SpaceGrotesk_700Bold", fontSize: 12 }}>
+                <Text style={{ color: "#ffc61a", fontFamily: "SpaceGrotesk_700Bold", fontSize: 12 }}>
                   ⚠️  Your tree is wilting. Complete tasks to heal it.
                 </Text>
               </View>
@@ -201,7 +201,7 @@ export default function TreeModal({ visible, onClose }: TreeModalProps) {
               style={{
                 borderRadius: 18,
                 borderWidth: 1,
-                borderColor: isCritical || isDead ? "#f07000aa" : COLORS.border,
+                borderColor: isCritical || isDead ? "#ff8229aa" : COLORS.border,
                 backgroundColor: COLORS.cardElevated,
                 paddingHorizontal: 16,
                 paddingVertical: 14,

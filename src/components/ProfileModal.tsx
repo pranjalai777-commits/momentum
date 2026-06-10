@@ -144,7 +144,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
     >
       <View style={{ flex: 1 }}>
         <Pressable
-          style={{ flex: 1, backgroundColor: "rgba(6,10,22,0.70)" }}
+          style={{ flex: 1, backgroundColor: "rgba(8,9,13,0.70)" }}
           onPress={handleClose}
         />
         <View

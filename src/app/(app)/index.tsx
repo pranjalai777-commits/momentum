@@ -11,7 +11,8 @@ import TaskTimerComponent from "@/components/TaskTimer";
 import TurboButtonComponent from "@/components/TurboButton";
 import XPBarComponent from "@/components/XPBar";
 import XPCeremonyComponent from "@/components/XPCeremony";
-import { COLORS, GRADIENTS } from "@/constants/theme";
+import GradientText from "@/components/ui/GradientText";
+import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
 import { useAuth } from "@/hooks/useAuth";
 import { useRemoteMutations } from "@/hooks/useRemoteData";
 import { getMotivationalPrompt, getTreeHealthLabel, isTreeInDanger } from "@/lib/momentum";
@@ -35,6 +36,21 @@ import Svg, { Defs, RadialGradient, Stop, Rect } from "react-native-svg";
 function getActionErrorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
   return "Could not save to server. Please try again.";
+}
+
+// Web `daily-bonus-pop` keyframes: rise-in with overshoot, hold, drift out — 1.5s springy
+function DailyBonusPop() {
+  return (
+    <MotiView
+      from={{ opacity: 0, translateY: 10, scale: 0.8 }}
+      animate={{ opacity: 1, translateY: -4, scale: 1.1 }}
+      transition={{ type: "timing", duration: 600 }}
+    >
+      <Text style={{ fontFamily: FONTS.display, fontSize: 18, color: COLORS.dailyBonus }}>
+        🌟 DAILY BONUS +15 XP
+      </Text>
+    </MotiView>
+  );
 }
 
 export default function HomeScreen() {
@@ -287,18 +303,18 @@ export default function HomeScreen() {
           <Defs>
             {/* Cyan — top centre */}
             <RadialGradient id="n1" cx="50%" cy="0%" r="60%" fx="50%" fy="0%">
-              <Stop offset="0%" stopColor="#00d9f5" stopOpacity={turboActive ? "0" : "0.14"} />
-              <Stop offset="100%" stopColor="#00d9f5" stopOpacity="0" />
+              <Stop offset="0%" stopColor="#00d5ff" stopOpacity={turboActive ? "0" : "0.14"} />
+              <Stop offset="100%" stopColor="#00d5ff" stopOpacity="0" />
             </RadialGradient>
             {/* Purple — top centre (both modes) */}
             <RadialGradient id="n2" cx="50%" cy="2%" r="55%" fx="50%" fy="2%">
-              <Stop offset="0%" stopColor="#8833ff" stopOpacity="0.10" />
-              <Stop offset="100%" stopColor="#8833ff" stopOpacity="0" />
+              <Stop offset="0%" stopColor="#a64dff" stopOpacity="0.10" />
+              <Stop offset="100%" stopColor="#a64dff" stopOpacity="0" />
             </RadialGradient>
             {/* Cyan — bottom-right (normal only) */}
             <RadialGradient id="n3" cx="95%" cy="85%" r="40%" fx="95%" fy="85%">
-              <Stop offset="0%" stopColor="#00d9f5" stopOpacity={turboActive ? "0" : "0.07"} />
-              <Stop offset="100%" stopColor="#00d9f5" stopOpacity="0" />
+              <Stop offset="0%" stopColor="#00d5ff" stopOpacity={turboActive ? "0" : "0.07"} />
+              <Stop offset="100%" stopColor="#00d5ff" stopOpacity="0" />
             </RadialGradient>
           </Defs>
           <Rect x="0" y="0" width="100%" height="100%" fill="url(#n1)" />
@@ -318,13 +334,13 @@ export default function HomeScreen() {
           <Defs>
             {/* Purple — mid-left */}
             <RadialGradient id="n4" cx="0%" cy="55%" r="45%" fx="0%" fy="55%">
-              <Stop offset="0%" stopColor="#7c3aed" stopOpacity={turboActive ? "0" : "0.09"} />
-              <Stop offset="100%" stopColor="#7c3aed" stopOpacity="0" />
+              <Stop offset="0%" stopColor="#a64dff" stopOpacity={turboActive ? "0" : "0.09"} />
+              <Stop offset="100%" stopColor="#a64dff" stopOpacity="0" />
             </RadialGradient>
             {/* Cyan — mid-right (normal only) */}
             <RadialGradient id="n5" cx="100%" cy="40%" r="40%" fx="100%" fy="40%">
-              <Stop offset="0%" stopColor="#00d9f5" stopOpacity={turboActive ? "0" : "0.07"} />
-              <Stop offset="100%" stopColor="#00d9f5" stopOpacity="0" />
+              <Stop offset="0%" stopColor="#00d5ff" stopOpacity={turboActive ? "0" : "0.07"} />
+              <Stop offset="100%" stopColor="#00d5ff" stopOpacity="0" />
             </RadialGradient>
           </Defs>
           <Rect x="0" y="0" width="100%" height="100%" fill="url(#n4)" />
@@ -344,18 +360,18 @@ export default function HomeScreen() {
             <Defs>
               {/* Purple — top centre */}
               <RadialGradient id="rg1" cx="50%" cy="0%" r="55%" fx="50%" fy="0%">
-                <Stop offset="0%" stopColor="#9933ff" stopOpacity="0.22" />
-                <Stop offset="100%" stopColor="#9933ff" stopOpacity="0" />
+                <Stop offset="0%" stopColor="#cc66ff" stopOpacity="0.22" />
+                <Stop offset="100%" stopColor="#cc66ff" stopOpacity="0" />
               </RadialGradient>
               {/* Pink — bottom-left */}
               <RadialGradient id="rg2" cx="10%" cy="90%" r="50%" fx="10%" fy="90%">
-                <Stop offset="0%" stopColor="#ff1a80" stopOpacity="0.16" />
-                <Stop offset="100%" stopColor="#ff1a80" stopOpacity="0" />
+                <Stop offset="0%" stopColor="#ff4d88" stopOpacity="0.16" />
+                <Stop offset="100%" stopColor="#ff4d88" stopOpacity="0" />
               </RadialGradient>
               {/* Cyan — bottom-right */}
               <RadialGradient id="rg3" cx="90%" cy="75%" r="45%" fx="90%" fy="75%">
-                <Stop offset="0%" stopColor="#00d9f5" stopOpacity="0.12" />
-                <Stop offset="100%" stopColor="#00d9f5" stopOpacity="0" />
+                <Stop offset="0%" stopColor="#00d5ff" stopOpacity="0.12" />
+                <Stop offset="100%" stopColor="#00d5ff" stopOpacity="0" />
               </RadialGradient>
             </Defs>
             <Rect x="0" y="0" width="100%" height="100%" fill="url(#rg1)" />
@@ -366,9 +382,9 @@ export default function HomeScreen() {
       ) : null}
 
       {showDailyBonus ? (
-        <Text className="absolute top-[30%] self-center z-50 text-daily-bonus font-display text-[20px]">
-          🌟 DAILY BONUS +15 XP
-        </Text>
+        <View className="absolute top-[33%] self-center z-50" pointerEvents="none">
+          <DailyBonusPop />
+        </View>
       ) : null}
 
       {actionError ? (
@@ -379,26 +395,24 @@ export default function HomeScreen() {
 
       {/* ── Header ── */}
       <View className="items-center gap-[10px] pb-[14px] z-[2]">
-        <Text
-          className="text-foreground font-display text-[36px] tracking-[2px]"
-          style={{
-            shadowColor: COLORS.neonCyan,
-            shadowOpacity: 0.22,
-            shadowRadius: 20,
-            shadowOffset: { width: 0, height: 0 },
-          }}
-        >
-          MOMENTUM
-        </Text>
+        {/* Web: text-2xl font-display font-black tracking-tight, gradient foreground → cyan/0.7 */}
+        <GradientText
+          text="MOMENTUM"
+          fontSize={24}
+          fontFamily={FONTS.display}
+          letterSpacing={-0.6}
+          colors={[COLORS.foreground, COLORS.neonCyan]}
+          stopOpacities={[1, 0.7]}
+        />
           <AnimatePresence exitBeforeEnter>
             <MotiView
               key={prompt}
-              from={{ opacity: 0, translateY: 5 }}
+              from={{ opacity: 0, translateY: 8 }}
               animate={{ opacity: 1, translateY: 0 }}
               exit={{ opacity: 0, translateY: -5 }}
-              transition={{ type: "timing", duration: 380 }}
+              transition={{ type: "timing", duration: 500 }}
             >
-              <Text className="text-muted-foreground font-sans text-[13px] -mt-2">{prompt}</Text>
+              <Text className="text-muted-foreground font-sans text-[12px] -mt-2">{prompt}</Text>
             </MotiView>
           </AnimatePresence>
         <DailyBannerComponent
@@ -417,24 +431,32 @@ export default function HomeScreen() {
           onPress={() => { hapticChipTap(); setTreeModalVisible(true); }}
           className="flex-row items-center gap-[8px] px-[10px] py-[6px] rounded-full border"
           style={{
-            borderColor: treeInDanger ? "#f07000aa" : COLORS.border,
-            backgroundColor: treeInDanger ? "rgba(240,112,0,0.10)" : COLORS.cardElevated,
+            borderColor: treeInDanger ? "#ff8229aa" : COLORS.border,
+            backgroundColor: treeInDanger ? COLORS.heatHot + "1a" : COLORS.cardElevated,
           }}
         >
           <Text className="text-[13px]">{data.treeHealth === 0 ? "💀" : data.treeHealth <= 30 ? "🥀" : "🌳"}</Text>
           <Text
             className="font-display text-[11px] uppercase tracking-[1.3px]"
-            style={{ color: treeInDanger ? "#f0ad00" : COLORS.mutedForeground }}
+            style={{ color: treeInDanger ? "#ffc61a" : COLORS.mutedForeground }}
           >
             {treeInDanger ? "Tree needs care!" : `Your Tree · ${treeHealthLabel}`}
           </Text>
         </Pressable>
         <XPBarComponent xp={data.xp} xpGained={lastXpGained} />
         {data.todayActions === 0 ? (
-          <View className="flex-row items-center gap-[5px] px-[10px] py-[4px] rounded-[14px] bg-[#1f1508] border" style={{ borderColor: COLORS.dailyBonus + "55" }}>
-            <Sparkles size={12} color={COLORS.dailyBonus} />
-            <Text className="text-daily-bonus font-display-medium text-[11px]">Bonus ready on your first task today</Text>
-          </View>
+          // Web "Bonus ready!" hint: gold flat text with subtle-float (±4px, 3s loop)
+          <MotiView
+            from={{ translateY: 0 }}
+            animate={{ translateY: -4 }}
+            transition={{ type: "timing", duration: 1500, loop: true, repeatReverse: true }}
+            className="flex-row items-center gap-1"
+          >
+            <Sparkles size={14} color={COLORS.dailyBonus} />
+            <Text style={{ fontFamily: FONTS.display, fontSize: 12, color: COLORS.dailyBonus }}>
+              Bonus ready!
+            </Text>
+          </MotiView>
         ) : null}
       </View>
 
@@ -442,12 +464,12 @@ export default function HomeScreen() {
       <View className="flex-1 gap-[10px] z-[2]">
         <TaskInputComponent onAdd={(text) => void handleAddTask(text)} />
         {pendingCount > 0 ? (
-          <View className="flex-row items-center gap-2 px-[2px]">
-            <View className="w-[5px] h-[5px] rounded-full bg-neon-cyan opacity-70" />
-            <Text className="text-muted-foreground font-display text-[10px] tracking-[2.2px] uppercase">
-              {pendingCount} TASK{pendingCount === 1 ? "" : "S"} TO CRUSH
-            </Text>
-          </View>
+          <Text
+            className="text-[10px] uppercase px-1"
+            style={{ fontFamily: FONTS.display, letterSpacing: 2, color: COLORS.mutedForeground + "99" }}
+          >
+            {pendingCount} TASK{pendingCount === 1 ? "" : "S"} TO CRUSH
+          </Text>
         ) : null}
         <TaskListComponent
           tasks={tasks}
@@ -461,8 +483,7 @@ export default function HomeScreen() {
 
       {/* ── Footer panel ── */}
       <View className="z-[2]" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
-        <View className="h-px bg-border mb-3 opacity-50" />
-        <View className="items-center gap-[10px]">
+        <View className="items-center gap-[6px] pt-2">
           <TurboButtonComponent data={data} onActivate={() => void handleActivateTurbo()} />
           <HeatMeterComponent heat={data.heat} turboActive={turboActive} />
           <StatsBarComponent
@@ -503,7 +524,7 @@ export default function HomeScreen() {
             zIndex: 120,
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor: "rgba(6,10,22,0.88)",
+            backgroundColor: "rgba(8,9,13,0.88)",
             paddingHorizontal: 28,
           }}
         >
@@ -517,7 +538,7 @@ export default function HomeScreen() {
               borderRadius: 28,
               borderWidth: 1,
               borderColor: COLORS.border,
-              backgroundColor: "#111827",
+              backgroundColor: "#14161f",
               paddingHorizontal: 24,
               paddingTop: 32,
               paddingBottom: 24,
