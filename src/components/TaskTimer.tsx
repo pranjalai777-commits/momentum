@@ -27,6 +27,7 @@ import { MotiView } from "moti";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, Stop } from "react-native-svg";
+import ScalePressable from "@/components/ui/ScalePressable";
 import TimerPickerOverlay from "./TimerPicker";
 import TimeUpDialogOverlay from "./TimeUpDialog";
 
@@ -421,19 +422,17 @@ function TaskTimer({ task, onComplete, onCancel }: TaskTimerProps) {
       ) : null}
 
       <View className="gap-3 items-center">
-        <Pressable
+        <ScalePressable
           onPress={handleDoneEarly}
-          style={({ pressed }) => [
-            {
-              borderRadius: 16,
-              overflow: "hidden",
-              shadowColor: COLORS.success,
-              shadowOpacity: 0.3,
-              shadowRadius: 30,
-              shadowOffset: { width: 0, height: 0 },
-            },
-            pressed && { transform: [{ scale: 0.95 }] },
-          ]}
+          style={{
+            borderRadius: 16,
+            overflow: "hidden",
+            shadowColor: COLORS.success,
+            shadowOpacity: 0.3,
+            shadowRadius: 30,
+            shadowOffset: { width: 0, height: 0 },
+          }}
+          pressedStyle={{ transform: [{ scale: 0.95 }] }}
         >
           <LinearGradient
             colors={GRADIENTS.successCyan}
@@ -450,28 +449,26 @@ function TaskTimer({ task, onComplete, onCancel }: TaskTimerProps) {
               DONE ✓
             </Text>
           </LinearGradient>
-        </Pressable>
+        </ScalePressable>
 
-        <Pressable
+        <ScalePressable
           onPress={() => {
             setExtensions((prev) => prev + 1);
             setPhase("add-time");
             hapticExtend();
           }}
           className="px-6 rounded-[12px] items-center justify-center"
-          style={({ pressed }) => [
-            {
-              paddingVertical: 10,
-              borderWidth: 1,
-              borderColor: COLORS.mutedForeground + "33",
-            },
-            pressed && { transform: [{ scale: 0.98 }] },
-          ]}
+          style={{
+            paddingVertical: 10,
+            borderWidth: 1,
+            borderColor: COLORS.mutedForeground + "33",
+          }}
+          pressedStyle={{ transform: [{ scale: 0.98 }] }}
         >
           <Text className="text-muted-foreground text-[14px]" style={{ fontFamily: FONTS.display }}>
             + NEED MORE TIME
           </Text>
-        </Pressable>
+        </ScalePressable>
       </View>
 
       <Text className="text-muted-foreground font-sans text-[12px] mt-3">

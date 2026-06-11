@@ -1,8 +1,21 @@
 import { useCallback, useState } from "react";
-import Purchases from "react-native-purchases";
+import Purchases, { CustomerInfo } from "react-native-purchases";
 import { useNoAdsStore } from "@/store/useNoAdsStore";
 
 const ENTITLEMENT_ID = "Momentum Pro";
+const PRODUCT_ID = "momentum_remove_ads";
+
+/**
+ * Check entitlement two ways:
+ * 1. By entitlement key — works once the product is linked to an entitlement in RevenueCat dashboard
+ * 2. By nonSubscriptionTransactions product ID — works immediately, even without entitlement setup
+ */
+function resolveNoAds(customerInfo: CustomerInfo): boolean {
+  if (ENTITLEMENT_ID in customerInfo.entitlements.active) return true;
+  return customerInfo.nonSubscriptionTransactions.some(
+    (t) => t.productIdentifier === PRODUCT_ID
+  );
+}
 
 export function useRevenueCat() {
   const setNoAds = useNoAdsStore((s) => s.setNoAds);
@@ -13,7 +26,7 @@ export function useRevenueCat() {
   const checkEntitlement = useCallback(async () => {
     try {
       const customerInfo = await Purchases.getCustomerInfo();
-      const isActive = ENTITLEMENT_ID in customerInfo.entitlements.active;
+      const isActive = resolveNoAds(customerInfo);
       setNoAds(isActive);
       return isActive;
     } catch (e) {
@@ -34,12 +47,23 @@ export function useRevenueCat() {
         );
       }
       const { customerInfo } = await Purchases.purchasePackage(pkg);
-      const isActive = ENTITLEMENT_ID in customerInfo.entitlements.active;
+      const isActive = resolveNoAds(customerInfo);
       setNoAds(isActive);
       return isActive;
     } catch (e: unknown) {
       if (e && typeof e === "object" && "userCancelled" in e && (e as { userCancelled: boolean }).userCancelled) {
         return false;
+      }
+      // Purchase failed — silently attempt restore in case user already owns it
+      try {
+        const restored = await Purchases.restorePurchases();
+        const isActive = resolveNoAds(restored);
+        if (isActive) {
+          setNoAds(true);
+          return true;
+        }
+      } catch {
+        // restore also failed, fall through to show original error
       }
       setError(e instanceof Error ? e.message : "Purchase failed. Please try again.");
       return false;
@@ -53,7 +77,7 @@ export function useRevenueCat() {
     setIsRestoring(true);
     try {
       const customerInfo = await Purchases.restorePurchases();
-      const isActive = ENTITLEMENT_ID in customerInfo.entitlements.active;
+      const isActive = resolveNoAds(customerInfo);
       setNoAds(isActive);
       return isActive;
     } catch (e) {

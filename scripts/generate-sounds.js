@@ -100,9 +100,12 @@ function offsetSamples(samples, delaySeconds) {
 
 console.log('\nGenerating sounds from wireframe Web Audio API specs…\n');
 
-// ── 1. tick  — sine 600 Hz, gain 0.15 → 0.001, 0.12 s ───────────────────────
+// ── 1. tick  — sine 600 Hz, 0.12 s. Web gain is 0.15, but a 600 Hz sine at
+// 15% amplitude is nearly inaudible on phone speakers (they roll off mids and
+// can't be boosted past player.volume=1), so we encode ~+15 dB for perceived
+// parity with the browser.
 writeWav('tick.wav',
-  genTone({ type: 'sine', freq: 600, gain0: 0.15, gainEnd: 0.001, duration: 0.12 })
+  genTone({ type: 'sine', freq: 600, gain0: 0.85, gainEnd: 0.001, duration: 0.12 })
 );
 
 // ── 2. urgent-tick  — square 880 Hz, gain 0.12 → 0.001, 0.10 s ──────────────
@@ -181,9 +184,10 @@ writeWav('small-reward.wav', mix([
   writeWav('level-up.wav', mix(layers));
 }
 
-// ── 10. timer-tick  — sine 1000 Hz, gain 0.04 → 0.001, 0.05 s ───────────────
+// ── 10. timer-tick  — sine 1000 Hz, 0.05 s. Web gain 0.04, boosted 3× for
+// phone speakers (same reasoning as tick.wav).
 writeWav('timer-tick.wav',
-  genTone({ type: 'sine', freq: 1000, gain0: 0.04, gainEnd: 0.001, duration: 0.05 })
+  genTone({ type: 'sine', freq: 1000, gain0: 0.12, gainEnd: 0.001, duration: 0.05 })
 );
 
 // ── 11. extend  — sine sweep 400 → 800 Hz (over 0.2 s), gain 0.10 → 0.001, 0.30 s
@@ -192,14 +196,14 @@ writeWav('extend.wav',
                  gain0: 0.10, gainEnd: 0.001, totalDuration: 0.30 })
 );
 
-// ── 12. tick-115  — sine 690 Hz (600 * 1.15), gain 0.15 → 0.001, 0.12 s ──────
+// ── 12. tick-115  — sine 690 Hz (600 * 1.15), 0.12 s. Boosted like tick.wav.
 writeWav('tick-115.wav',
-  genTone({ type: 'sine', freq: 600 * 1.15, gain0: 0.15, gainEnd: 0.001, duration: 0.12 })
+  genTone({ type: 'sine', freq: 600 * 1.15, gain0: 0.85, gainEnd: 0.001, duration: 0.12 })
 );
 
-// ── 13. tick-130  — sine 780 Hz (600 * 1.30), gain 0.15 → 0.001, 0.12 s ──────
+// ── 13. tick-130  — sine 780 Hz (600 * 1.30), 0.12 s. Boosted like tick.wav.
 writeWav('tick-130.wav',
-  genTone({ type: 'sine', freq: 600 * 1.30, gain0: 0.15, gainEnd: 0.001, duration: 0.12 })
+  genTone({ type: 'sine', freq: 600 * 1.30, gain0: 0.85, gainEnd: 0.001, duration: 0.12 })
 );
 
 console.log('\n✅  All 13 sounds generated successfully.\n');

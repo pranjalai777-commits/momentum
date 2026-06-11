@@ -1,4 +1,5 @@
 import { COLORS } from "@/constants/theme";
+import { hapticCancel } from "@/lib/haptics";
 import { useAuth } from "@/hooks/useAuth";
 import { getLevel, getLevelTitle } from "@/lib/momentum";
 import { supabase } from "@/lib/supabase";
@@ -48,6 +49,8 @@ type StatsModalProps = {
 
 export default function StatsModal({ visible, onClose }: StatsModalProps) {
   const insets = useSafeAreaInsets();
+
+  const handleClose = () => { hapticCancel(); onClose(); };
   const { user } = useAuth();
   const localData = useGameStore((s) => s.data);
 
@@ -161,13 +164,13 @@ export default function StatsModal({ visible, onClose }: StatsModalProps) {
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       statusBarTranslucent
     >
       <View style={{ flex: 1 }}>
         <Pressable
           style={{ flex: 1, backgroundColor: "rgba(8,9,13,0.70)" }}
-          onPress={onClose}
+          onPress={handleClose}
         />
         <View
           style={{
@@ -206,7 +209,7 @@ export default function StatsModal({ visible, onClose }: StatsModalProps) {
                 )}
               </View>
               <Pressable
-                onPress={onClose}
+                onPress={handleClose}
                 style={{
                   width: 32,
                   height: 32,

@@ -13,6 +13,7 @@ import XPBarComponent from "@/components/XPBar";
 import XPCeremonyComponent from "@/components/XPCeremony";
 import GradientText from "@/components/ui/GradientText";
 import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { useAuth } from "@/hooks/useAuth";
 import { useRemoteMutations } from "@/hooks/useRemoteData";
 import { getMotivationalPrompt, getTreeHealthLabel, isTreeInDanger } from "@/lib/momentum";
@@ -24,6 +25,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView, AnimatePresence } from "moti";
 import { useInterstitialAd } from "@/hooks/useInterstitialAd";
+import { useRevenueCat } from "@/hooks/useRevenueCat";
 import { useNoAdsStore } from "@/store/useNoAdsStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -97,7 +99,11 @@ export default function HomeScreen() {
   // Pattern: first 2 tasks of the day are ad-free, every completion from 3rd onwards shows an ad.
   // Resets at midnight each day. Skipped entirely if user has "Remove Ads" purchase.
   const { showAd } = useInterstitialAd();
+  const { checkEntitlement } = useRevenueCat();
   const noAds = useNoAdsStore((s) => s.noAds);
+
+  // Verify entitlement from RevenueCat on mount so noAds is always accurate
+  useEffect(() => { void checkEntitlement(); }, [checkEntitlement]);
   const adDailyCountRef = useRef(0);
   const adDateRef = useRef("");
   const AD_FREE_TASKS = 2;
@@ -275,7 +281,7 @@ export default function HomeScreen() {
         showAd();
       }
     }
-  }, [pendingSavePrompt, ceremony.completionType, showAd]);
+  }, [pendingSavePrompt, ceremony.completionType, showAd, noAds]);
 
   const handleDismissSavePrompt = useCallback(() => {
     setSaveProgressDismissed(true);
@@ -601,17 +607,16 @@ export default function HomeScreen() {
             {/* Buttons */}
             <View style={{ alignSelf: "stretch", gap: 10 }}>
               {/* Primary */}
-              <Pressable
+              <ScalePressable
                 onPress={handleLinkAccount}
-                style={({ pressed }) => ({
+                style={{
                   borderRadius: 14,
                   shadowColor: COLORS.neonCyan,
                   shadowOpacity: 0.38,
                   shadowRadius: 14,
                   shadowOffset: { width: 0, height: 0 },
-                  opacity: pressed ? 0.85 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
-                })}
+                }}
+                pressedStyle={{ opacity: 0.85, transform: [{ scale: 0.97 }] }}
               >
                 <View style={{ borderRadius: 14, overflow: "hidden" }}>
                   <LinearGradient
@@ -636,12 +641,12 @@ export default function HomeScreen() {
                     </Text>
                   </LinearGradient>
                 </View>
-              </Pressable>
+              </ScalePressable>
 
               {/* Secondary */}
-              <Pressable
+              <ScalePressable
                 onPress={handleDismissSavePrompt}
-                style={({ pressed }) => ({
+                style={{
                   height: 48,
                   borderRadius: 12,
                   alignItems: "center",
@@ -649,8 +654,8 @@ export default function HomeScreen() {
                   borderWidth: 1,
                   borderColor: COLORS.border,
                   backgroundColor: COLORS.muted,
-                  opacity: pressed ? 0.7 : 1,
-                })}
+                }}
+                pressedStyle={{ opacity: 0.7 }}
               >
                 <Text
                   style={{
@@ -661,7 +666,7 @@ export default function HomeScreen() {
                 >
                   Maybe Later
                 </Text>
-              </Pressable>
+              </ScalePressable>
             </View>
           </MotiView>
         </MotiView>

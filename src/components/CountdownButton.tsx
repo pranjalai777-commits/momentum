@@ -1,4 +1,5 @@
 import { BORDER_RADIUS, COLORS, FONTS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { hapticCancel, hapticCountdownTick, hapticSuccess, hapticTimerLaunch } from "@/lib/haptics";
 import { playLaunch, playSuccess, playTick, playUrgentTick } from "@/lib/sounds";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -76,9 +77,9 @@ function CountdownButton({ onComplete, onTaskFinished, onCancel }: CountdownButt
 
   if (phase === "idle") {
     return (
-      <Pressable onPress={startCountdown} style={({ pressed }) => [styles.launch, pressed && styles.pressed]}>
+      <ScalePressable onPress={startCountdown} style={styles.launch} pressedStyle={styles.pressed}>
         <Text style={styles.launchText}>LAUNCH</Text>
-      </Pressable>
+      </ScalePressable>
     );
   }
 

@@ -1,6 +1,8 @@
 import { COLORS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { useAuth } from "@/hooks/useAuth";
 import { useRevenueCat } from "@/hooks/useRevenueCat";
+import { hapticCancel } from "@/lib/haptics";
 import { supabase } from "@/lib/supabase";
 import { useGameStore } from "@/store/useGameStore";
 import { useNoAdsStore } from "@/store/useNoAdsStore";
@@ -47,7 +49,12 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const noAds = useNoAdsStore((s) => s.noAds);
-  const { purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring, error: rcError } = useRevenueCat();
+  const { checkEntitlement, purchaseRemoveAds, restorePurchases, isPurchasing, isRestoring, error: rcError } = useRevenueCat();
+
+  // Re-verify entitlement from RevenueCat each time the modal opens
+  useEffect(() => {
+    if (visible) void checkEntitlement();
+  }, [visible, checkEntitlement]);
 
   const handleRemoveAds = async () => {
     const success = await purchaseRemoveAds();
@@ -129,6 +136,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
   };
 
   const handleClose = () => {
+    hapticCancel();
     setDeleteInput("");
     setErrorMessage(null);
     onClose();
@@ -226,9 +234,9 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
               </Text>
 
               {isAnonymous && onUpgradeAccount && (
-                <Pressable
+                <ScalePressable
                   onPress={() => { handleClose(); onUpgradeAccount(); }}
-                  style={({ pressed }) => ({
+                  style={{
                     marginTop: 8,
                     height: 44,
                     borderRadius: 12,
@@ -237,13 +245,13 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                     backgroundColor: COLORS.neonCyan + "22",
                     borderWidth: 1,
                     borderColor: COLORS.neonCyan + "55",
-                    opacity: pressed ? 0.8 : 1,
-                  })}
+                  }}
+                  pressedStyle={{ opacity: 0.8 }}
                 >
                   <Text style={{ color: COLORS.neonCyan, fontFamily: "SpaceGrotesk_600SemiBold", fontSize: 13 }}>
                     Link Account to Save Progress
                   </Text>
-                </Pressable>
+                </ScalePressable>
               )}
             </View>
 
@@ -273,15 +281,16 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                   <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20 }}>
                     One-time purchase. Remove all ads from Momentum forever.
                   </Text>
-                  <Pressable
+                  <ScalePressable
                     onPress={() => void handleRemoveAds()}
                     disabled={isPurchasing || isRestoring}
-                    style={({ pressed }) => ({ height: 50, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.neonCyan, opacity: isPurchasing ? 0.7 : pressed ? 0.85 : 1, transform: [{ scale: pressed ? 0.98 : 1 }] })}
+                    style={{ height: 50, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: COLORS.neonCyan, opacity: isPurchasing ? 0.7 : 1 }}
+                    pressedStyle={isPurchasing ? null : { opacity: 0.85, transform: [{ scale: 0.98 }] }}
                   >
                     {isPurchasing ? <ActivityIndicator color="#fff" /> : (
                       <Text style={{ color: "#fff", fontFamily: "SpaceGrotesk_700Bold", fontSize: 15 }}>Remove Ads — $2.99</Text>
                     )}
-                  </Pressable>
+                  </ScalePressable>
                   {rcError ? <Text style={{ color: COLORS.neonPink, fontFamily: "Inter_400Regular", fontSize: 12 }}>{rcError}</Text> : null}
                 </>
               )}
@@ -334,18 +343,18 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                     fontSize: 14,
                   }}
                 />
-                <Pressable
+                <ScalePressable
                   onPress={handleDeleteAccount}
                   disabled={!canDelete || isDeletingAccount || isLoggingOut}
-                  style={({ pressed }) => ({
+                  style={{
                     height: 50,
                     borderRadius: 14,
                     alignItems: "center",
                     justifyContent: "center",
                     backgroundColor: canDelete ? COLORS.neonPink : COLORS.borderSubtle,
-                    opacity: canDelete ? (pressed ? 0.85 : 1) : 0.6,
-                    transform: [{ scale: pressed && canDelete ? 0.98 : 1 }],
-                  })}
+                    opacity: canDelete ? 1 : 0.6,
+                  }}
+                  pressedStyle={canDelete ? { opacity: 0.85, transform: [{ scale: 0.98 }] } : null}
                 >
                   {isDeletingAccount ? (
                     <ActivityIndicator color={COLORS.foreground} />
@@ -357,7 +366,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                       </Text>
                     </View>
                   )}
-                </Pressable>
+                </ScalePressable>
               </View>
             ) : null}
 
@@ -382,10 +391,10 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
               <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20 }}>
                 Log out to end this session on this device. You can sign back in anytime.
               </Text>
-              <Pressable
+              <ScalePressable
                 onPress={() => void handleLogout()}
                 disabled={isLoggingOut || isDeletingAccount}
-                style={({ pressed }) => ({
+                style={{
                   height: 50,
                   borderRadius: 14,
                   alignItems: "center",
@@ -393,9 +402,8 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                   borderWidth: 1,
                   borderColor: COLORS.border,
                   backgroundColor: COLORS.muted,
-                  opacity: pressed ? 0.8 : 1,
-                  transform: [{ scale: pressed ? 0.98 : 1 }],
-                })}
+                }}
+                pressedStyle={{ opacity: 0.8, transform: [{ scale: 0.98 }] }}
               >
                 {isLoggingOut ? (
                   <ActivityIndicator color={COLORS.foreground} />
@@ -404,7 +412,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                     Log out
                   </Text>
                 )}
-              </Pressable>
+              </ScalePressable>
             </View>
 
             {/* Error message */}

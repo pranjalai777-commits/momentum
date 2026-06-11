@@ -4,11 +4,12 @@ import { hapticExtend, hapticGiveUp, hapticSuccess } from "@/lib/haptics";
 import { playAlarm, playExtend, playSmallReward } from "@/lib/sounds";
 import GradientText from "@/components/ui/GradientText";
 import RadialGlow from "@/components/ui/RadialGlow";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { LinearGradient } from "expo-linear-gradient";
 import { CheckCircle2, Clock, Plus, XCircle } from "lucide-react-native";
 import { MotiView } from "moti";
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -167,23 +168,21 @@ function TimeUpDialog({ taskText, onDone, onExtend, onGiveUp }: TimeUpDialogProp
 
         {/* Action buttons */}
         <View style={{ width: "100%", gap: 12 }}>
-          <Pressable
+          <ScalePressable
             onPress={() => {
               playSmallReward();
               hapticSuccess();
               onDone();
             }}
-            style={({ pressed }) => [
-              {
-                borderRadius: 12,
-                overflow: "hidden",
-                shadowColor: COLORS.success,
-                shadowOpacity: 0.3,
-                shadowRadius: 25,
-                shadowOffset: { width: 0, height: 0 },
-              },
-              pressed && { transform: [{ scale: 0.98 }] },
-            ]}
+            style={{
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: COLORS.success,
+              shadowOpacity: 0.3,
+              shadowRadius: 25,
+              shadowOffset: { width: 0, height: 0 },
+            }}
+            pressedStyle={{ transform: [{ scale: 0.98 }] }}
           >
             <LinearGradient
               colors={GRADIENTS.successCyan}
@@ -202,55 +201,51 @@ function TimeUpDialog({ taskText, onDone, onExtend, onGiveUp }: TimeUpDialogProp
                 Yes, I Finished It!
               </Text>
             </LinearGradient>
-          </Pressable>
+          </ScalePressable>
 
-          <Pressable
+          <ScalePressable
             onPress={() => {
               playExtend();
               hapticExtend();
               onExtend();
             }}
-            style={({ pressed }) => [
-              {
-                paddingVertical: 16,
-                borderRadius: 12,
-                backgroundColor: COLORS.secondary,
-                borderWidth: 1,
-                borderColor: COLORS.border,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              },
-              pressed && { transform: [{ scale: 0.98 }] },
-            ]}
+            style={{
+              paddingVertical: 16,
+              borderRadius: 12,
+              backgroundColor: COLORS.secondary,
+              borderWidth: 1,
+              borderColor: COLORS.border,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+            pressedStyle={{ transform: [{ scale: 0.98 }] }}
           >
             <Plus size={20} color={COLORS.neonCyan} />
             <Text style={{ fontFamily: FONTS.display, fontSize: 16, color: COLORS.neonCyan }}>
               Need More Time
             </Text>
-          </Pressable>
+          </ScalePressable>
 
-          <Pressable
+          <ScalePressable
             onPress={handleGiveUp}
-            style={({ pressed }) => [
-              {
-                paddingVertical: 12,
-                borderRadius: 12,
-                backgroundColor: COLORS.muted,
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 8,
-              },
-              pressed && { transform: [{ scale: 0.98 }] },
-            ]}
+            style={{
+              paddingVertical: 12,
+              borderRadius: 12,
+              backgroundColor: COLORS.muted,
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+            pressedStyle={{ transform: [{ scale: 0.98 }] }}
           >
             <XCircle size={16} color={COLORS.mutedForeground} />
             <Text style={{ fontFamily: FONTS.display, fontSize: 14, color: COLORS.mutedForeground }}>
               I Couldn&apos;t Finish
             </Text>
-          </Pressable>
+          </ScalePressable>
         </View>
       </MotiView>
     </View>

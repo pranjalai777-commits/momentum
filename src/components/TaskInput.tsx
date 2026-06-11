@@ -1,9 +1,10 @@
 import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { hapticTaskAdd } from "@/lib/haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import { Plus } from "lucide-react-native";
 import { useRef, useState } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { TextInput, View } from "react-native";
 
 type TaskInputProps = {
   onAdd: (text: string) => void;
@@ -55,13 +56,11 @@ function TaskInput({ onAdd }: TaskInputProps) {
       />
 
       {/* Web: h-11 w-11 rounded-xl gradient cyan→purple, disabled opacity-30 */}
-      <Pressable
+      <ScalePressable
         onPress={submit}
         disabled={!hasText}
-        style={({ pressed }) => [
-          { borderRadius: 12, overflow: "hidden", opacity: hasText ? 1 : 0.3 },
-          pressed && { transform: [{ scale: 0.95 }] },
-        ]}
+        style={{ borderRadius: 12, overflow: "hidden", opacity: hasText ? 1 : 0.3 }}
+        pressedStyle={{ transform: [{ scale: 0.95 }] }}
       >
         <LinearGradient
           colors={GRADIENTS.cyanPurple}
@@ -71,7 +70,7 @@ function TaskInput({ onAdd }: TaskInputProps) {
         >
           <Plus color="#ffffff" size={20} />
         </LinearGradient>
-      </Pressable>
+      </ScalePressable>
     </View>
   );
 }

@@ -1,7 +1,8 @@
 import { COLORS, FONTS } from "@/constants/theme";
 import { hapticChipTap } from "@/lib/haptics";
 import { BarChart3, Calendar, User } from "lucide-react-native";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
+import ScalePressable from "@/components/ui/ScalePressable";
 
 type DailyBannerProps = {
   dailyStreak: number;
@@ -17,10 +18,10 @@ function DailyBanner({ dailyStreak, onOpenProfile, onOpenStats, onOpenStreak }: 
 
   return (
     <View className="flex-row items-center justify-center gap-4">
-      <Pressable
+      <ScalePressable
         onPress={() => { hapticChipTap(); onOpenStreak(); }}
         className="flex-row items-center gap-[6px]"
-        style={({ pressed }) => pressed && { opacity: 0.7 }}
+        pressedStyle={{ opacity: 0.7 }}
       >
         <Calendar size={14} color={COLORS.primary} />
         <Text
@@ -35,29 +36,29 @@ function DailyBanner({ dailyStreak, onOpenProfile, onOpenStats, onOpenStreak }: 
         >
           {dailyStreak}d streak
         </Text>
-      </Pressable>
+      </ScalePressable>
 
       <Text style={{ color: COLORS.border }}>·</Text>
 
-      <Pressable
+      <ScalePressable
         onPress={() => { hapticChipTap(); onOpenProfile(); }}
         className="flex-row items-center gap-[6px]"
-        style={({ pressed }) => pressed && { opacity: 0.7 }}
+        pressedStyle={{ opacity: 0.7 }}
       >
         <User size={14} color={COLORS.mutedForeground} />
         <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.mutedForeground }}>Profile</Text>
-      </Pressable>
+      </ScalePressable>
 
       <Text style={{ color: COLORS.border }}>·</Text>
 
-      <Pressable
+      <ScalePressable
         onPress={() => { hapticChipTap(); onOpenStats(); }}
         className="flex-row items-center gap-[6px]"
-        style={({ pressed }) => pressed && { opacity: 0.7 }}
+        pressedStyle={{ opacity: 0.7 }}
       >
         <BarChart3 size={14} color={COLORS.mutedForeground} />
         <Text style={{ fontFamily: FONTS.body, fontSize: 12, color: COLORS.mutedForeground }}>Stats</Text>
-      </Pressable>
+      </ScalePressable>
     </View>
   );
 }

@@ -1,4 +1,5 @@
 import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { hapticCancel, hapticPickerSelect } from "@/lib/haptics";
 import { playTick } from "@/lib/sounds";
 import { LinearGradient } from "expo-linear-gradient";
@@ -107,15 +108,16 @@ function TimerPicker({ taskText, onSetTimer, onCancel, isExtension = false }: Ti
         {/* Quick picks — web grid-cols-4 with custom "?" cell */}
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: CHIP_GAP, width: "100%" }}>
           {QUICK_OPTIONS.map((min) => (
-            <Pressable
+            <ScalePressable
               key={min}
               onPress={() => pick(min)}
-              style={({ pressed }) => [chipStyle, pressed && { transform: [{ scale: 0.95 }] }]}
+              style={chipStyle}
+              pressedStyle={{ transform: [{ scale: 0.95 }] }}
             >
               <Text style={{ fontFamily: FONTS.display, fontSize: 14, color: COLORS.foreground }}>
                 {isExtension ? `+ ${min}m` : min < 60 ? `${min}m` : `${min / 60}h`}
               </Text>
-            </Pressable>
+            </ScalePressable>
           ))}
           <TextInput
             value={customMinutes}
@@ -139,20 +141,18 @@ function TimerPicker({ taskText, onSetTimer, onCancel, isExtension = false }: Ti
 
         {/* Custom submit */}
         {showCustomSubmit ? (
-          <Pressable
+          <ScalePressable
             onPress={() => pick(customValue)}
-            style={({ pressed }) => [
-              {
-                width: "100%",
-                borderRadius: 12,
-                overflow: "hidden",
-                shadowColor: COLORS.neonCyan,
-                shadowOpacity: 0.25,
-                shadowRadius: 20,
-                shadowOffset: { width: 0, height: 0 },
-              },
-              pressed && { transform: [{ scale: 0.98 }] },
-            ]}
+            style={{
+              width: "100%",
+              borderRadius: 12,
+              overflow: "hidden",
+              shadowColor: COLORS.neonCyan,
+              shadowOpacity: 0.25,
+              shadowRadius: 20,
+              shadowOffset: { width: 0, height: 0 },
+            }}
+            pressedStyle={{ transform: [{ scale: 0.98 }] }}
           >
             <LinearGradient
               colors={GRADIENTS.cyanPurple}
@@ -171,7 +171,7 @@ function TimerPicker({ taskText, onSetTimer, onCancel, isExtension = false }: Ti
                 {isExtension ? `Add ${customValue} min to timer` : `Start ${customValue} min timer`}
               </Text>
             </LinearGradient>
-          </Pressable>
+          </ScalePressable>
         ) : null}
 
         <Pressable

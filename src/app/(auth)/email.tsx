@@ -1,4 +1,5 @@
 import { COLORS, GRADIENTS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { hapticAuthError, hapticAuthSuccess, hapticAuthTap } from "@/lib/haptics";
 import { supabase } from "@/lib/supabase";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,7 +9,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -226,17 +226,17 @@ export default function EmailAuthScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Back button */}
-          <Pressable
+          <ScalePressable
             onPress={() => {
               hapticAuthTap();
               router.back();
             }}
             className="flex-row items-center gap-[6px] self-start py-1"
-            style={({ pressed }) => pressed && { opacity: 0.5 }}
+            pressedStyle={{ opacity: 0.5 }}
           >
             <Text className="text-muted-foreground text-[20px] leading-[20px]">←</Text>
             <Text className="text-muted-foreground font-sans-medium text-[14px]">Back</Text>
-          </Pressable>
+          </ScalePressable>
 
           <View style={{ flex: 1, justifyContent: "center", gap: 24 }}>
             {/* Header */}
@@ -267,29 +267,29 @@ export default function EmailAuthScreen() {
                 secureTextEntry={!showPassword}
                 enterDelay={420}
                 rightElement={
-                  <Pressable
+                  <ScalePressable
                     onPress={() => {
                       hapticAuthTap();
                       setShowPassword((s) => !s);
                     }}
                     className="pl-3 py-1"
-                    style={({ pressed }) => pressed && { opacity: 0.6 }}
+                    pressedStyle={{ opacity: 0.6 }}
                   >
                     <Text className="text-muted-foreground font-sans-medium text-[10px] tracking-[1.2px]">
                       {showPassword ? "HIDE" : "SHOW"}
                     </Text>
-                  </Pressable>
+                  </ScalePressable>
                 }
               />
             </View>
 
             {/* Submit button */}
             <Animated.View style={btnEnterStyle}>
-              <Pressable
+              <ScalePressable
                 disabled={isSubmitting}
                 onPress={() => void handleSubmit()}
                 className="rounded-xl overflow-hidden"
-                style={({ pressed }) => [
+                style={[
                   {
                     shadowColor: COLORS.neonCyan,
                     shadowOpacity: 0.4,
@@ -297,9 +297,9 @@ export default function EmailAuthScreen() {
                     shadowOffset: { width: 0, height: 4 },
                     elevation: 8,
                   },
-                  pressed && { opacity: 0.9 },
                   isSubmitting && { opacity: 0.6 },
                 ]}
+                pressedStyle={{ opacity: 0.9 }}
               >
                 <LinearGradient
                   colors={GRADIENTS.cyanPurple}
@@ -315,7 +315,7 @@ export default function EmailAuthScreen() {
                     </Text>
                   )}
                 </LinearGradient>
-              </Pressable>
+              </ScalePressable>
             </Animated.View>
 
             {/* Error / info messages */}

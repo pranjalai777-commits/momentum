@@ -1,4 +1,5 @@
 import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { hapticTurboActivate } from "@/lib/haptics";
 import { canActivateTurbo, getTurboRemainingMs, isTurboActive } from "@/lib/momentum";
 import { playEpicSuccess } from "@/lib/sounds";
@@ -6,7 +7,7 @@ import type { MomentumData } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { Zap } from "lucide-react-native";
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -126,22 +127,20 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
   }
 
   return (
-    <Pressable
+    <ScalePressable
       onPress={() => {
         playEpicSuccess();
         hapticTurboActivate();
         onActivate();
       }}
-      style={({ pressed }) => [
-        {
-          borderRadius: 9999,
-          shadowColor: GRADIENTS.turboReady[0],
-          shadowOpacity: 0.3,
-          shadowRadius: 12,
-          shadowOffset: { width: 0, height: 0 },
-        },
-        pressed && { transform: [{ scale: 0.95 }] },
-      ]}
+      style={{
+        borderRadius: 9999,
+        shadowColor: GRADIENTS.turboReady[0],
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        shadowOffset: { width: 0, height: 0 },
+      }}
+      pressedStyle={{ transform: [{ scale: 0.95 }] }}
     >
       <LinearGradient
         colors={GRADIENTS.turboReady}
@@ -152,7 +151,7 @@ function TurboButton({ data, onActivate }: TurboButtonProps) {
         <Zap size={14} color="#0d0d0d" />
         <Text style={[LABEL, { color: "#0d0d0d" }]}>TURBO</Text>
       </LinearGradient>
-    </Pressable>
+    </ScalePressable>
   );
 }
 

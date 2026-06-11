@@ -1,4 +1,5 @@
 import { COLORS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { useAuth } from "@/hooks/useAuth";
 import { useRevenueCat } from "@/hooks/useRevenueCat";
 import { supabase } from "@/lib/supabase";
@@ -164,14 +165,12 @@ export default function ProfileScreen() {
             <Text className="text-muted-foreground font-sans text-[13px] leading-5">
               One-time purchase. Remove all ads from Momentum forever and support development.
             </Text>
-            <Pressable
+            <ScalePressable
               onPress={() => void handleRemoveAds()}
               disabled={isPurchasing || isRestoring}
               className="h-[50px] rounded-[14px] items-center justify-center"
-              style={({ pressed }) => [
-                { backgroundColor: COLORS.neonCyan, opacity: isPurchasing ? 0.7 : 1 },
-                pressed && { transform: [{ scale: 0.98 }] },
-              ]}
+              style={{ backgroundColor: COLORS.neonCyan, opacity: isPurchasing ? 0.7 : 1 }}
+              pressedStyle={{ transform: [{ scale: 0.98 }] }}
             >
               {isPurchasing ? (
                 <ActivityIndicator color={COLORS.background} />
@@ -180,7 +179,7 @@ export default function ProfileScreen() {
                   Remove Ads — $2.99
                 </Text>
               )}
-            </Pressable>
+            </ScalePressable>
             <Pressable
               onPress={() => void handleRestorePurchases()}
               disabled={isPurchasing || isRestoring}
@@ -204,18 +203,18 @@ export default function ProfileScreen() {
         <Text className="text-muted-foreground font-sans text-[13px] leading-5">
           Log out to end this session on this device. You can sign back in anytime.
         </Text>
-        <Pressable
+        <ScalePressable
           onPress={() => void handleLogout()}
           disabled={isLoggingOut || isDeletingAccount}
           className="h-[50px] rounded-[14px] items-center justify-center border border-border bg-muted"
-          style={({ pressed }) => pressed && { transform: [{ scale: 0.98 }] }}
+          pressedStyle={{ transform: [{ scale: 0.98 }] }}
         >
           {isLoggingOut ? (
             <ActivityIndicator color={COLORS.foreground} />
           ) : (
             <Text className="text-foreground font-display-medium text-[15px]">Log out</Text>
           )}
-        </Pressable>
+        </ScalePressable>
       </View>
 
       {canShowDeleteAccount ? (
@@ -236,24 +235,22 @@ export default function ProfileScreen() {
             editable={!isDeletingAccount && !isLoggingOut}
             onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 350)}
           />
-          <Pressable
+          <ScalePressable
             onPress={handleDeleteAccount}
             disabled={!canDelete || isDeletingAccount || isLoggingOut}
             className="h-[50px] rounded-[14px] items-center justify-center"
-            style={({ pressed }) => [
-              {
-                backgroundColor: canDelete ? COLORS.neonPink : COLORS.borderSubtle,
-                opacity: canDelete ? 1 : 0.6,
-              },
-              pressed && canDelete && { transform: [{ scale: 0.98 }] },
-            ]}
+            style={{
+              backgroundColor: canDelete ? COLORS.neonPink : COLORS.borderSubtle,
+              opacity: canDelete ? 1 : 0.6,
+            }}
+            pressedStyle={canDelete ? { transform: [{ scale: 0.98 }] } : null}
           >
             {isDeletingAccount ? (
               <ActivityIndicator color={COLORS.foreground} />
             ) : (
               <Text className="text-foreground font-display-medium text-[15px]">Delete my account</Text>
             )}
-          </Pressable>
+          </ScalePressable>
         </View>
       ) : null}
 

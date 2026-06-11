@@ -1,4 +1,5 @@
 import { COLORS, GRADIENTS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { useAuth } from "@/hooks/useAuth";
 import { hapticAuthError, hapticAuthSuccess, hapticAuthTap } from "@/lib/haptics";
 import { supabase } from "@/lib/supabase";
@@ -7,7 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import { useEffect, useMemo, useState } from "react";
-import { ActivityIndicator, Dimensions, Platform, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Dimensions, Platform, Text, View } from "react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -152,15 +153,15 @@ function GoogleSignInButton({ clientId, disabled, onBusyChange, onError, onSucce
   };
 
   return (
-    <Pressable
+    <ScalePressable
       onPress={() => void handleGooglePress()}
       disabled={disabled}
       className="flex-1 flex-row items-center justify-center gap-2 h-[52px] rounded-lg border border-border bg-card"
-      style={({ pressed }) => pressed && { opacity: 0.75, transform: [{ scale: 0.97 }] }}
+      pressedStyle={{ opacity: 0.75, transform: [{ scale: 0.97 }] }}
     >
       <Text className="text-foreground font-sans-bold text-[16px]">G</Text>
       <Text className="text-foreground font-sans-medium text-[14px]">{disabled ? "Connecting…" : "Google"}</Text>
-    </Pressable>
+    </ScalePressable>
   );
 }
 
@@ -328,20 +329,18 @@ export default function WelcomeScreen() {
         <Animated.View style={actionsStyle} className="px-5 pb-7 gap-3">
           {/* PLAY NOW — pulsing gradient CTA */}
           <Animated.View style={btnPulseStyle}>
-            <Pressable
+            <ScalePressable
               onPress={() => void handlePlayNow()}
               disabled={busyAction !== null}
               className="rounded-xl overflow-hidden"
-              style={({ pressed }) => [
-                {
-                  shadowColor: COLORS.neonCyan,
-                  shadowOpacity: 0.5,
-                  shadowRadius: 24,
-                  shadowOffset: { width: 0, height: 6 },
-                  elevation: 12,
-                },
-                pressed && { opacity: 0.88 },
-              ]}
+              style={{
+                shadowColor: COLORS.neonCyan,
+                shadowOpacity: 0.5,
+                shadowRadius: 24,
+                shadowOffset: { width: 0, height: 6 },
+                elevation: 12,
+              }}
+              pressedStyle={{ opacity: 0.88 }}
             >
               <LinearGradient
                 colors={GRADIENTS.cyanPurple}
@@ -358,34 +357,34 @@ export default function WelcomeScreen() {
                   </>
                 )}
               </LinearGradient>
-            </Pressable>
+            </ScalePressable>
           </Animated.View>
 
           {/* Sign In / Create Account side-by-side */}
           <View className="flex-row rounded-lg border border-border bg-card overflow-hidden h-[52px]">
-              <Pressable
+              <ScalePressable
                 onPress={() => {
                   hapticAuthTap();
                   router.push("/(auth)/email?mode=signin");
                 }}
                 disabled={busyAction !== null}
                 className="flex-1 items-center justify-center"
-                style={({ pressed }) => pressed && { opacity: 0.7, transform: [{ scale: 0.97 }] }}
+                pressedStyle={{ opacity: 0.7, transform: [{ scale: 0.97 }] }}
             >
               <Text className="text-foreground font-display-medium text-[14px]">Sign In</Text>
-            </Pressable>
+            </ScalePressable>
             <View className="w-[1px] bg-border my-[10px]" />
-              <Pressable
+              <ScalePressable
                 onPress={() => {
                   hapticAuthTap();
                   router.push("/(auth)/email?mode=signup");
                 }}
                 disabled={busyAction !== null}
                 className="flex-1 items-center justify-center"
-                style={({ pressed }) => pressed && { opacity: 0.7, transform: [{ scale: 0.97 }] }}
+                pressedStyle={{ opacity: 0.7, transform: [{ scale: 0.97 }] }}
             >
               <Text className="text-foreground font-display-medium text-[14px]">Create Account</Text>
-            </Pressable>
+            </ScalePressable>
           </View>
 
           {/* OR divider — social auth hidden for this release */}

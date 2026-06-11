@@ -8,7 +8,7 @@ import GradientText from "@/components/ui/GradientText";
 import Shimmer from "@/components/ui/Shimmer";
 import { LinearGradient } from "expo-linear-gradient";
 import { MotiView } from "moti";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Text, View } from "react-native";
 import Animated, {
   interpolate,
@@ -19,7 +19,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
-import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import Svg, { Defs, Path, RadialGradient, Rect, Stop } from "react-native-svg";
 
 type XPCeremonyProps = {
   xp: number;
@@ -39,29 +39,96 @@ const COMPLETION_MESSAGES: Record<CompletionType, { title: string; subtitle: str
 
 type Phase = "enter" | "fill" | "levelup" | "exit";
 
+type ParticleShape = "circle" | "sparkle" | "diamond" | "ring";
+
 type ParticleSpec = {
   left: number;
   top: number;
   size: number;
   color: string;
   delay: number;
+  shape: ParticleShape;
 };
 
-function createParticles(count: number, epic: boolean): ParticleSpec[] {
-  const epicPalette = [COLORS.neonCyan, COLORS.neonPurple, COLORS.neonPink, COLORS.success];
-  return Array.from({ length: count }, (_, i) => ({
-    left: 10 + Math.random() * 80,
-    top: 20 + Math.random() * 60,
-    size: 4 + Math.random() * (epic ? 10 : 6),
-    color: epic
-      ? epicPalette[i % 4] + "b3" // /0.7
-      : (i % 2 === 0 ? COLORS.neonCyan : COLORS.neonPurple) + "99", // /0.6
-    delay: i * 150,
-  }));
+// Weighted mix: circles stay the base (web look), sparkles sell the
+// celebration, diamonds/rings add variety without getting busy.
+function pickShape(): ParticleShape {
+  const r = Math.random();
+  if (r < 0.35) return "circle";
+  if (r < 0.65) return "sparkle";
+  if (r < 0.85) return "diamond";
+  return "ring";
 }
 
-// Web `ceremony-float` keyframes: rise + scale-in + fade-out, 3s ease-in-out infinite
-function CeremonyParticle({ spec, hidden }: { spec: ParticleSpec; hidden: boolean }) {
+function createParticles(count: number, epic: boolean, shapes: ParticleShape[]): ParticleSpec[] {
+  const epicPalette = [COLORS.neonCyan, COLORS.neonPurple, COLORS.neonPink, COLORS.success];
+  return Array.from({ length: count }, (_, i) => {
+    // Web spreads particles uniformly over 10–90% of the browser window, where
+    // the content column is only ~30% wide — so most land in the empty side
+    // margins. On a phone the content fills the width, so an even spread piles
+    // them onto the text. Same 10–90% bounds, but sqrt-biased toward the edges
+    // to reproduce the web's flanking look.
+    const side = Math.random() < 0.5 ? -1 : 1;
+    const edgeBiasedOffset = 40 * Math.sqrt(Math.random());
+    const shape = shapes[i] ?? "circle";
+    return {
+      left: 50 + side * edgeBiasedOffset,
+      top: 20 + Math.random() * 60,
+      // Sparkles read smaller than solid shapes at the same box size
+      size: (4 + Math.random() * (epic ? 10 : 6)) * (shape === "sparkle" ? 1.4 : 1),
+      color: epic
+        ? epicPalette[i % 4] + "b3" // /0.7
+        : (i % 2 === 0 ? COLORS.neonCyan : COLORS.neonPurple) + "99", // /0.6
+      delay: i * 150,
+      shape,
+    };
+  });
+}
+
+function ParticleShapeView({ spec }: { spec: ParticleSpec }) {
+  const { size, color, shape } = spec;
+  switch (shape) {
+    case "sparkle":
+      // 4-point star
+      return (
+        <Svg width={size} height={size} viewBox="0 0 24 24">
+          <Path d="M12 0 L14.5 9.5 L24 12 L14.5 14.5 L12 24 L9.5 14.5 L0 12 L9.5 9.5 Z" fill={color} />
+        </Svg>
+      );
+    case "diamond":
+      return (
+        <View
+          style={{
+            width: size,
+            height: size,
+            backgroundColor: color,
+            borderRadius: Math.max(1, size * 0.15),
+            transform: [{ rotate: "45deg" }],
+          }}
+        />
+      );
+    case "ring":
+      return (
+        <View
+          style={{
+            width: size,
+            height: size,
+            borderRadius: 999,
+            borderWidth: Math.max(1.5, size * 0.2),
+            borderColor: color,
+          }}
+        />
+      );
+    default:
+      return <View style={{ width: size, height: size, borderRadius: 999, backgroundColor: color }} />;
+  }
+}
+
+// Web `ceremony-float` keyframes: rise + scale-in + fade-out, 3s ease-in-out infinite.
+// Memoized: the ceremony re-renders on every XP-counter frame (60–120/s), but
+// particle specs only change on throttled twinkle rolls (~15/s) — skipping the
+// in-between renders keeps the JS thread light on low-end Android devices.
+const CeremonyParticle = memo(function CeremonyParticle({ spec, hidden }: { spec: ParticleSpec; hidden: boolean }) {
   const progress = useSharedValue(0);
 
   useEffect(() => {
@@ -86,16 +153,14 @@ function CeremonyParticle({ spec, hidden }: { spec: ParticleSpec; hidden: boolea
           position: "absolute",
           left: `${spec.left}%`,
           top: `${spec.top}%`,
-          width: spec.size,
-          height: spec.size,
-          borderRadius: 999,
-          backgroundColor: spec.color,
         },
         style,
       ]}
-    />
+    >
+      <ParticleShapeView spec={spec} />
+    </Animated.View>
   );
-}
+});
 
 function XPCeremony({ xp, prevXp, xpGained, leveledUp, completionType, onFinish }: XPCeremonyProps) {
   const [phase, setPhase] = useState<Phase>("enter");
@@ -114,7 +179,27 @@ function XPCeremony({ xp, prevXp, xpGained, leveledUp, completionType, onFinish 
 
   const isEpic = completionType === "early";
   const particleCount = isEpic ? 16 : completionType === "gave-up" ? 4 : 8;
-  const particles = useMemo(() => createParticles(particleCount, isEpic), [particleCount, isEpic]);
+  // Stable shape per particle slot — re-rolling shapes on every twinkle frame
+  // would remount SVG subtrees and jank the JS thread.
+  const shapesRef = useRef<ParticleShape[]>([]);
+  if (shapesRef.current.length !== particleCount) {
+    shapesRef.current = Array.from({ length: particleCount }, pickShape);
+  }
+
+  // Web twinkle: specs re-roll while the XP counter animates (cubic ease-out,
+  // so fast at first, decelerating to a stop). The web re-rolls per frame, but
+  // RN pays JS-thread + layout cost per roll, so throttle to ~15/s — reads the
+  // same, stays smooth. Piggybacks on the displayXp renders, keeping the decay.
+  const rollRef = useRef({ time: 0, key: 0 });
+  if (phase === "fill" && Date.now() - rollRef.current.time >= 64) {
+    rollRef.current = { time: Date.now(), key: rollRef.current.key + 1 };
+  }
+  const twinkleKey = phase === "fill" ? rollRef.current.key : -1;
+  const particles = useMemo(
+    () => createParticles(particleCount, isEpic, shapesRef.current),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [particleCount, isEpic, twinkleKey]
+  );
 
   // Web phase machine: fill @800ms, levelup @2400ms (+2000ms), finish @3200/4800ms
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { COLORS } from "@/constants/theme";
+import { hapticCancel } from "@/lib/haptics";
 import {
   getLevel,
   getLevelProgress,
@@ -46,6 +47,8 @@ type TreeModalProps = {
 
 export default function TreeModal({ visible, onClose }: TreeModalProps) {
   const insets = useSafeAreaInsets();
+
+  const handleClose = () => { hapticCancel(); onClose(); };
   const data = useGameStore((s) => s.data);
   const level = useMemo(() => getLevel(data.xp), [data.xp]);
   const progress = useMemo(() => getLevelProgress(data.xp).progress, [data.xp]);
@@ -69,13 +72,13 @@ export default function TreeModal({ visible, onClose }: TreeModalProps) {
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       statusBarTranslucent
     >
       <View style={{ flex: 1 }}>
         <Pressable
           style={{ flex: 1, backgroundColor: "rgba(8,9,13,0.70)" }}
-          onPress={onClose}
+          onPress={handleClose}
         />
         <View
           style={{
@@ -119,7 +122,7 @@ export default function TreeModal({ visible, onClose }: TreeModalProps) {
                 </Text>
               </View>
               <Pressable
-                onPress={onClose}
+                onPress={handleClose}
                 style={{
                   width: 32,
                   height: 32,

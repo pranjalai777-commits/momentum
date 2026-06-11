@@ -15,8 +15,10 @@ import {
   SpaceGrotesk_700Bold,
 } from "@expo-google-fonts/space-grotesk";
 import * as SplashScreen from "expo-splash-screen";
+import { requestTrackingPermissionsAsync } from "expo-tracking-transparency";
 import { useEffect } from "react";
 import { Platform } from "react-native";
+import mobileAds, { MaxAdContentRating } from "react-native-google-mobile-ads";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import Purchases, { LOG_LEVEL } from "react-native-purchases";
@@ -74,6 +76,22 @@ export default function RootLayout() {
     void preloadSounds().catch((error: unknown) => {
       console.warn("Failed to preload sounds", error);
     });
+  }, []);
+
+  useEffect(() => {
+    async function initAds() {
+      // Request ATT permission on iOS before initialising AdMob
+      if (Platform.OS === "ios") {
+        await requestTrackingPermissionsAsync();
+      }
+      await mobileAds().initialize();
+      await mobileAds().setRequestConfiguration({
+        maxAdContentRating: MaxAdContentRating.PG,
+        tagForChildDirectedTreatment: false,
+        tagForUnderAgeOfConsent: false,
+      });
+    }
+    void initAds();
   }, []);
 
   if (!fontsLoaded) return null;

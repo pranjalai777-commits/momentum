@@ -1,4 +1,5 @@
 import { COLORS } from "@/constants/theme";
+import { hapticCancel } from "@/lib/haptics";
 import { useStreakHistory } from "@/hooks/useStreakHistory";
 import { Flame, X, Calendar, Trophy, Zap } from "lucide-react-native";
 import { useEffect, useMemo } from "react";
@@ -162,6 +163,8 @@ export default function StreakModal({
   lastActionAt,
 }: StreakModalProps) {
   const insets = useSafeAreaInsets();
+
+  const handleClose = () => { hapticCancel(); onClose(); };
   const { data: history, isLoading, refetch } = useStreakHistory(visible);
 
   useEffect(() => {
@@ -175,13 +178,13 @@ export default function StreakModal({
       visible={visible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       statusBarTranslucent
     >
       <View style={{ flex: 1 }}>
         <Pressable
           style={{ flex: 1, backgroundColor: "rgba(8,9,13,0.70)" }}
-          onPress={onClose}
+          onPress={handleClose}
         />
         <View
           style={{
@@ -217,7 +220,7 @@ export default function StreakModal({
                 </Text>
               </View>
               <Pressable
-                onPress={onClose}
+                onPress={handleClose}
                 style={{
                   width: 32,
                   height: 32,

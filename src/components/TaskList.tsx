@@ -1,4 +1,5 @@
 import { COLORS, FONTS } from "@/constants/theme";
+import ScalePressable from "@/components/ui/ScalePressable";
 import { hapticTaskDelete, hapticTaskStart } from "@/lib/haptics";
 import type { Task } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
@@ -42,23 +43,21 @@ function TaskList({ tasks, activeTaskId, onStart, onDelete }: TaskListProps) {
       {pending.map((task) => {
         const active = activeTaskId === task.id;
         return (
-          <Pressable
+          <ScalePressable
             key={task.id}
             onPress={() => {
               hapticTaskStart();
               onStart(task);
             }}
             className="flex-row items-center rounded-[12px] border"
-            style={({ pressed }) => [
-              {
-                gap: 12,
-                paddingHorizontal: 14,
-                paddingVertical: 12,
-                backgroundColor: active ? COLORS.primary + "1a" : COLORS.secondary + "99",
-                borderColor: active ? COLORS.primary + "4d" : COLORS.border + "80",
-              },
-              pressed && { transform: [{ scale: 0.99 }] },
-            ]}
+            style={{
+              gap: 12,
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+              backgroundColor: active ? COLORS.primary + "1a" : COLORS.secondary + "99",
+              borderColor: active ? COLORS.primary + "4d" : COLORS.border + "80",
+            }}
+            pressedStyle={{ transform: [{ scale: 0.99 }] }}
           >
             <Circle size={18} color={COLORS.mutedForeground} />
             <Text className="flex-1 text-foreground font-sans text-[14px]" numberOfLines={1} ellipsizeMode="tail">
@@ -88,7 +87,7 @@ function TaskList({ tasks, activeTaskId, onStart, onDelete }: TaskListProps) {
                 </Text>
               </LinearGradient>
             </View>
-          </Pressable>
+          </ScalePressable>
         );
       })}
 

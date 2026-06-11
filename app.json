@@ -2,7 +2,7 @@
   "expo": {
     "name": "Momentum",
     "slug": "momentum",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "momentum",
@@ -18,7 +18,8 @@
       "appleTeamId": "NR42GN3S2T",
       "usesAppleSignIn": true,
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserTrackingUsageDescription": "We use this to show you relevant ads and keep Momentum free."
       }
     },
     "android": {
@@ -54,6 +55,7 @@
           "color": "#8833ff"
         }
       ],
+      "expo-tracking-transparency",
       "expo-apple-authentication",
       "expo-font",
       "expo-audio",
