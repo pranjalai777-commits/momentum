@@ -5,6 +5,8 @@ import {
   TestIds,
 } from "react-native-google-mobile-ads";
 import { Platform } from "react-native";
+import { useAdsStore } from "@/store/useAdsStore";
+import { useNoAdsStore } from "@/store/useNoAdsStore";
 
 /**
  * Ad Unit IDs — uses test IDs in dev, real IDs in production.
@@ -23,12 +25,30 @@ const AD_UNIT_ID = __DEV__
  * Automatically reloads after each show so the next ad is always ready.
  */
 export function useInterstitialAd() {
+  const adsReady = useAdsStore((s) => s.adsReady);
+  const personalizedAds = useAdsStore((s) => s.personalizedAds);
+  const noAds = useNoAdsStore((s) => s.noAds);
   const adRef = useRef<InterstitialAd | null>(null);
   const isLoadedRef = useRef(false);
   const loadFnRef = useRef<(() => void) | undefined>(undefined);
+  const canLoadAds = adsReady && !noAds;
+  const canLoadAdsRef = useRef(canLoadAds);
 
-  loadFnRef.current = () => {
-    const ad = InterstitialAd.createForAdRequest(AD_UNIT_ID);
+  canLoadAdsRef.current = canLoadAds;
+
+  const clearAd = useCallback(() => {
+    adRef.current?.removeAllListeners();
+    adRef.current = null;
+    isLoadedRef.current = false;
+  }, []);
+
+  const loadAd = useCallback(() => {
+    if (!canLoadAds) return;
+
+    clearAd();
+    const ad = InterstitialAd.createForAdRequest(AD_UNIT_ID, {
+      requestNonPersonalizedAdsOnly: !personalizedAds,
+    });
     adRef.current = ad;
     isLoadedRef.current = false;
 
@@ -42,24 +62,35 @@ export function useInterstitialAd() {
 
     ad.addAdEventListener(AdEventType.CLOSED, () => {
       isLoadedRef.current = false;
-      // Preload next ad immediately so it's ready for the next trigger
-      loadFnRef.current?.();
+      if (canLoadAdsRef.current) {
+        loadFnRef.current?.();
+      }
     });
 
     ad.load();
-  };
+  }, [canLoadAds, clearAd, personalizedAds]);
+
+  loadFnRef.current = loadAd;
 
   useEffect(() => {
-    loadFnRef.current?.();
-  }, []);
+    if (!canLoadAds) {
+      clearAd();
+      return;
+    }
+
+    loadAd();
+    return clearAd;
+  }, [canLoadAds, clearAd, loadAd]);
 
   /**
    * Shows the interstitial ad if loaded.
    * Returns true if the ad was shown, false if it wasn't ready yet.
    */
   const showAd = useCallback((): boolean => {
-    if (isLoadedRef.current && adRef.current) {
-      adRef.current.show();
+    if (canLoadAdsRef.current && isLoadedRef.current && adRef.current) {
+      void adRef.current.show().catch((error: unknown) => {
+        console.warn("[AdMob] Failed to show interstitial", error);
+      });
       return true;
     }
     return false;

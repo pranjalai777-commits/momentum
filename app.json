@@ -2,7 +2,7 @@
   "expo": {
     "name": "Momentum",
     "slug": "momentum",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "momentum",
@@ -65,7 +65,9 @@
         "react-native-google-mobile-ads",
         {
           "androidAppId": "ca-app-pub-2468139254817625~1038010491",
-          "iosAppId": "ca-app-pub-2468139254817625~3720014156"
+          "iosAppId": "ca-app-pub-2468139254817625~3720014156",
+          "delayAppMeasurementInit": true,
+          "userTrackingUsageDescription": "We use this to show you relevant ads and keep Momentum free."
         }
       ]
     ],
