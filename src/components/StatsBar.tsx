@@ -1,23 +1,26 @@
 import { COLORS, FONTS } from "@/constants/theme";
-import { Flame, Trophy, Zap } from "lucide-react-native";
-import { Text, View } from "react-native";
+import { Flame, Repeat2, Zap } from "lucide-react-native";
+import { Pressable, Text, View } from "react-native";
 
 type StatsBarProps = {
   totalActions: number;
   streak: number;
   bestStreak: number;
+  activeRoutines?: number;
+  onOpenRoutines?: () => void;
 };
 
-function StatsBar({ totalActions, streak, bestStreak }: StatsBarProps) {
+function StatsBar({ totalActions, streak, bestStreak, activeRoutines = 0, onOpenRoutines }: StatsBarProps) {
   // Web tiers: ≥5 heat-fire (+glow), ≥3 heat-hot, else primary purple
   const streakColor = streak >= 5 ? COLORS.heatFire : streak >= 3 ? COLORS.heatHot : COLORS.primary;
+  void bestStreak;
 
   return (
-    <View className="flex-row items-center justify-center gap-4">
+    <View className="flex-row items-center justify-center gap-3">
       <View className="flex-row items-center gap-[6px]">
         <Zap size={14} color={COLORS.primary} />
         <Text style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.mutedForeground }}>
-          {totalActions} task{totalActions === 1 ? "" : "s"} crushed
+          {totalActions} done
         </Text>
       </View>
 
@@ -39,13 +42,19 @@ function StatsBar({ totalActions, streak, bestStreak }: StatsBarProps) {
         </View>
       ) : null}
 
-      {bestStreak >= 3 ? (
-        <View className="flex-row items-center gap-[6px]">
-          <Trophy size={14} color={COLORS.primary + "80"} />
-          <Text style={{ fontFamily: FONTS.body, fontSize: 14, color: COLORS.mutedForeground + "99" }}>
-            best {bestStreak}×
+      {onOpenRoutines ? (
+        <Pressable onPress={onOpenRoutines} className="flex-row items-center gap-[6px]" hitSlop={8}>
+          <Repeat2 size={14} color={activeRoutines > 0 ? COLORS.neonCyan : COLORS.mutedForeground + "99"} />
+          <Text
+            style={{
+              fontFamily: FONTS.body,
+              fontSize: 14,
+              color: activeRoutines > 0 ? COLORS.neonCyan : COLORS.mutedForeground + "99",
+            }}
+          >
+            {activeRoutines}
           </Text>
-        </View>
+        </Pressable>
       ) : null}
     </View>
   );

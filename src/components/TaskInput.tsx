@@ -2,24 +2,25 @@ import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
 import ScalePressable from "@/components/ui/ScalePressable";
 import { hapticTaskAdd } from "@/lib/haptics";
 import { LinearGradient } from "expo-linear-gradient";
-import { Plus } from "lucide-react-native";
+import { Plus, Repeat2 } from "lucide-react-native";
 import { useRef, useState } from "react";
 import { TextInput, View } from "react-native";
 
 type TaskInputProps = {
-  onAdd: (text: string) => void;
+  onAdd: (text: string, repeatDaily: boolean) => void;
 };
 
 function TaskInput({ onAdd }: TaskInputProps) {
   const inputRef = useRef<TextInput>(null);
   const [text, setText] = useState("");
   const [focused, setFocused] = useState(false);
+  const [repeatDaily, setRepeatDaily] = useState(false);
 
   const submit = () => {
     const value = text.trim();
     if (!value) return;
     hapticTaskAdd();
-    onAdd(value);
+    onAdd(value, repeatDaily);
     setText("");
     inputRef.current?.focus();
   };
@@ -54,6 +55,23 @@ function TaskInput({ onAdd }: TaskInputProps) {
           includeFontPadding: false,
         }}
       />
+
+      <ScalePressable
+        onPress={() => setRepeatDaily((value) => !value)}
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: repeatDaily ? COLORS.neonCyan + "1f" : COLORS.secondary,
+          borderWidth: 1,
+          borderColor: repeatDaily ? COLORS.neonCyan + "80" : COLORS.border,
+        }}
+        pressedStyle={{ transform: [{ scale: 0.95 }] }}
+      >
+        <Repeat2 color={repeatDaily ? COLORS.neonCyan : COLORS.mutedForeground} size={19} />
+      </ScalePressable>
 
       {/* Web: h-11 w-11 rounded-xl gradient cyan→purple, disabled opacity-30 */}
       <ScalePressable

@@ -341,7 +341,7 @@ export default function StreakModal({
             )}
             {dailyStreak >= 3 && (
               <Text className="font-sans text-[13px] text-center mt-5" style={{ color: COLORS.neonCyan + "cc" }}>
-                Keep the fire alive — don't break the chain! 🔥
+                Keep the fire alive — don{"'"}t break the chain! 🔥
               </Text>
             )}
           </ScrollView>

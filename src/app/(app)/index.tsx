@@ -1,6 +1,7 @@
 import TreeModalComponent from "@/components/TreeModal";
 import DailyBannerComponent from "@/components/DailyBanner";
 import ProfileModalComponent from "@/components/ProfileModal";
+import RoutinesModalComponent from "@/components/RoutinesModal";
 import StatsModalComponent from "@/components/StatsModal";
 import StreakModalComponent from "@/components/StreakModal";
 import HeatMeterComponent from "@/components/HeatMeter";
@@ -16,11 +17,12 @@ import { COLORS, FONTS, GRADIENTS } from "@/constants/theme";
 import ScalePressable from "@/components/ui/ScalePressable";
 import { useAuth } from "@/hooks/useAuth";
 import { useRemoteMutations } from "@/hooks/useRemoteData";
-import { getMotivationalPrompt, getTreeHealthLabel, isTreeInDanger } from "@/lib/momentum";
+import { getLocalDateIso, getMotivationalPrompt, getTreeHealthLabel, isTreeInDanger } from "@/lib/momentum";
 import { hapticChipTap } from "@/lib/haptics";
 import { useGameStore } from "@/store/useGameStore";
+import { useRoutineStore } from "@/store/useRoutineStore";
 import { useTaskStore } from "@/store/useTaskStore";
-import type { CeremonyState, CompletionType, Task } from "@/types";
+import type { CeremonyState, CompletionType, RoutineTask, Task } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { MotiView, AnimatePresence } from "moti";
@@ -64,6 +66,7 @@ export default function HomeScreen() {
   const [profileModalVisible, setProfileModalVisible] = useState(false);
   const [statsModalVisible, setStatsModalVisible] = useState(false);
   const [treeModalVisible, setTreeModalVisible] = useState(false);
+  const [routinesModalVisible, setRoutinesModalVisible] = useState(false);
   const [prompt, setPrompt] = useState(getMotivationalPrompt());
   const [showSaveProgressPrompt, setShowSaveProgressPrompt] = useState(false);
   const [saveProgressDismissed, setSaveProgressDismissed] = useState(false);
@@ -83,6 +86,11 @@ export default function HomeScreen() {
   const deleteTask = useTaskStore((s) => s.deleteTask);
   const markCompleted = useTaskStore((s) => s.markCompleted);
   const setTasks = useTaskStore((s) => s.setTasks);
+  const routines = useRoutineStore((s) => s.routines);
+  const addRoutine = useRoutineStore((s) => s.addRoutine);
+  const updateRoutine = useRoutineStore((s) => s.updateRoutine);
+  const removeRoutine = useRoutineStore((s) => s.removeRoutine);
+  const setRoutines = useRoutineStore((s) => s.setRoutines);
 
   const data = useGameStore((s) => s.data);
   const setData = useGameStore((s) => s.setData);
@@ -93,7 +101,15 @@ export default function HomeScreen() {
   const activateTurbo = useGameStore((s) => s.activateTurbo);
   const dismissDailyBonus = useGameStore((s) => s.dismissDailyBonus);
   const checkTurboExpiry = useGameStore((s) => s.checkTurboExpiry);
-  const { addTaskRemote, completeTaskRemote, deleteTaskRemote, activateTurboRemote } = useRemoteMutations();
+  const {
+    addTaskRemote,
+    completeTaskRemote,
+    deleteTaskRemote,
+    activateTurboRemote,
+    addRoutineRemote,
+    updateRoutineRemote,
+    deleteRoutineRemote,
+  } = useRemoteMutations();
 
   // --- Ad integration ---
   // Pattern: first 2 tasks of the day are ad-free, every completion from 3rd onwards shows an ad.
@@ -148,17 +164,23 @@ export default function HomeScreen() {
   const treeHealthLabel = useMemo(() => getTreeHealthLabel(data.treeHealth), [data.treeHealth]);
 
   const handleAddTask = useCallback(
-    async (text: string) => {
+    async (text: string, repeatDaily: boolean) => {
       setActionError(null);
-      const task = addTask(text);
+      const routine = repeatDaily ? addRoutine(text) : null;
+      const task = addTask(text, {
+        routineId: routine?.id,
+        taskDate: routine ? getLocalDateIso() : undefined,
+      });
       try {
+        if (routine) await addRoutineRemote(routine);
         await addTaskRemote(task);
       } catch (error) {
         deleteTask(task.id);
+        if (routine) removeRoutine(routine.id);
         setActionError(getActionErrorMessage(error));
       }
     },
-    [addTask, addTaskRemote, deleteTask]
+    [addRoutine, addRoutineRemote, addTask, addTaskRemote, deleteTask, removeRoutine]
   );
 
   const handleDeleteTask = useCallback(
@@ -187,6 +209,37 @@ export default function HomeScreen() {
       setActionError(getActionErrorMessage(error));
     }
   }, [activateTurbo, activateTurboRemote, setData]);
+
+  const handleToggleRoutine = useCallback(
+    async (routine: RoutineTask) => {
+      setActionError(null);
+      const previousRoutines = useRoutineStore.getState().routines;
+      const nextRoutine = { ...routine, active: !routine.active, updatedAt: Date.now() };
+      updateRoutine(routine.id, { active: nextRoutine.active, updatedAt: nextRoutine.updatedAt });
+      try {
+        await updateRoutineRemote(nextRoutine);
+      } catch (error) {
+        setRoutines(previousRoutines);
+        setActionError(getActionErrorMessage(error));
+      }
+    },
+    [setRoutines, updateRoutine, updateRoutineRemote]
+  );
+
+  const handleDeleteRoutine = useCallback(
+    async (routine: RoutineTask) => {
+      setActionError(null);
+      const previousRoutines = useRoutineStore.getState().routines;
+      removeRoutine(routine.id);
+      try {
+        await deleteRoutineRemote(routine.id);
+      } catch (error) {
+        setRoutines(previousRoutines);
+        setActionError(getActionErrorMessage(error));
+      }
+    },
+    [deleteRoutineRemote, removeRoutine, setRoutines]
+  );
 
   const handleTaskComplete = useCallback(
     async (type: CompletionType) => {
@@ -468,7 +521,7 @@ export default function HomeScreen() {
 
       {/* ── Task area (grows to fill space) ── */}
       <View className="flex-1 gap-[10px] z-[2]">
-        <TaskInputComponent onAdd={(text) => void handleAddTask(text)} />
+        <TaskInputComponent onAdd={(text, repeatDaily) => void handleAddTask(text, repeatDaily)} />
         {pendingCount > 0 ? (
           <Text
             className="text-[10px] uppercase px-1"
@@ -488,7 +541,7 @@ export default function HomeScreen() {
       </View>
 
       {/* ── Footer panel ── */}
-      <View className="z-[2]" style={{ paddingBottom: Math.max(insets.bottom, 8) }}>
+      <View className="z-[2]" style={{ paddingBottom: Math.max(insets.bottom - 12, 6) }}>
         <View className="items-center gap-[6px] pt-2">
           <TurboButtonComponent data={data} onActivate={() => void handleActivateTurbo()} />
           <HeatMeterComponent heat={data.heat} turboActive={turboActive} />
@@ -496,6 +549,11 @@ export default function HomeScreen() {
             totalActions={data.tasksCompleted}
             streak={data.streak}
             bestStreak={data.bestStreak}
+            activeRoutines={routines.filter((routine) => routine.active).length}
+            onOpenRoutines={() => {
+              hapticChipTap();
+              setRoutinesModalVisible(true);
+            }}
           />
         </View>
       </View>
@@ -696,6 +754,13 @@ export default function HomeScreen() {
       <StatsModalComponent
         visible={statsModalVisible}
         onClose={() => setStatsModalVisible(false)}
+      />
+      <RoutinesModalComponent
+        visible={routinesModalVisible}
+        routines={routines}
+        onClose={() => setRoutinesModalVisible(false)}
+        onToggle={(routine) => void handleToggleRoutine(routine)}
+        onDelete={(routine) => void handleDeleteRoutine(routine)}
       />
     </View>
   );

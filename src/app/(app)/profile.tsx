@@ -5,6 +5,7 @@ import { useRevenueCat } from "@/hooks/useRevenueCat";
 import { supabase } from "@/lib/supabase";
 import { useGameStore } from "@/store/useGameStore";
 import { useNoAdsStore } from "@/store/useNoAdsStore";
+import { useRoutineStore } from "@/store/useRoutineStore";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useRouter } from "expo-router";
 import { useMemo, useRef, useState } from "react";
@@ -24,6 +25,7 @@ export default function ProfileScreen() {
   const { user, isAnonymous } = useAuth();
   const resetGameStore = useGameStore((s) => s.reset);
   const resetTaskStore = useTaskStore((s) => s.reset);
+  const resetRoutineStore = useRoutineStore((s) => s.reset);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
@@ -60,6 +62,7 @@ export default function ProfileScreen() {
   };
 
   const cleanupLocalState = () => {
+    resetRoutineStore();
     resetTaskStore();
     resetGameStore();
   };
@@ -156,7 +159,7 @@ export default function ProfileScreen() {
           <>
             <Text className="text-foreground font-display text-[18px]">Ads Removed ✨</Text>
             <Text className="text-muted-foreground font-sans text-[13px] leading-5">
-              You're on Momentum Pro — enjoy an ad-free experience forever.
+              {"You're"} on Momentum Pro — enjoy an ad-free experience forever.
             </Text>
           </>
         ) : (

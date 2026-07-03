@@ -26,6 +26,12 @@ Applied migration order:
    - Added Tree health profile fields and tree-health RPC support:
      - `sync_tree_health_rpc()`
      - extended `complete_task_rpc(...)` return payload with tree fields
+7. `20260703090000_daily_routines.sql`
+   - Added daily routine templates and generated-task linkage:
+     - `routine_tasks`
+     - `tasks.routine_id`
+     - `tasks.task_date`
+     - unique generated task per routine/day
 
 
 ## 2) Tables
@@ -70,6 +76,20 @@ Applied migration order:
 - `timer_minutes integer`
 - `completion_type text` check in `('early','on-time','late','gave-up')`
 - `xp_earned integer`
+- `routine_id uuid` FK → `routine_tasks(id)` (nullable, set null on delete)
+- `task_date date` (used for routine-generated daily instances)
+
+Unique index:
+- `(user_id, routine_id, task_date)` prevents duplicate generated tasks for the same routine/day. Regular one-off tasks keep `routine_id = null`, so they are unaffected.
+
+### `routine_tasks`
+- `id uuid` PK default `gen_random_uuid()`
+- `user_id uuid` FK → `auth.users(id)` (cascade delete)
+- `text text` (required)
+- `active boolean` default `true`
+- `created_at timestamptz` default `now()`
+- `updated_at timestamptz` default `now()`
+- `deleted_at timestamptz`
 
 ### `xp_events`
 - `id uuid` PK default `gen_random_uuid()`
@@ -108,6 +128,7 @@ RLS enabled on:
 - `user_profiles`
 - `daily_states`
 - `tasks`
+- `routine_tasks`
 - `xp_events`
 
 ### `user_profiles`
@@ -122,6 +143,12 @@ RLS enabled on:
 - DELETE own rows: `auth.uid() = user_id`
 
 ### `tasks`
+- SELECT own rows: `auth.uid() = user_id`
+- INSERT own rows: `WITH CHECK (auth.uid() = user_id)`
+- UPDATE own rows: `USING/WITH CHECK (auth.uid() = user_id)`
+- DELETE own rows: `auth.uid() = user_id`
+
+### `routine_tasks`
 - SELECT own rows: `auth.uid() = user_id`
 - INSERT own rows: `WITH CHECK (auth.uid() = user_id)`
 - UPDATE own rows: `USING/WITH CHECK (auth.uid() = user_id)`
@@ -203,6 +230,8 @@ Current app write path in `src/hooks/useRemoteData.ts`:
 - Task completion/game progression → `supabase.rpc('complete_task_rpc', ...)`
 - Tree decay sync on app active/reset → `supabase.rpc('sync_tree_health_rpc')`
 - Task CRUD still uses direct table writes (`tasks`) with RLS.
+- Routine CRUD uses direct table writes (`routine_tasks`) with RLS.
+- Daily routine task generation runs during sync in `src/hooks/useSync.ts`, upserting missing task instances for active routines.
 
 Current account-management RPC usage:
 - Account deletion (Profile screen) → `supabase.rpc('delete_my_account')` from `src/app/(app)/profile.tsx`

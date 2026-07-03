@@ -5,7 +5,7 @@ import { create } from "zustand";
 type TaskStore = {
   tasks: Task[];
   setTasks: (tasks: Task[]) => void;
-  addTask: (text: string) => Task;
+  addTask: (text: string, options?: Partial<Pick<Task, "id" | "routineId" | "taskDate" | "createdAt">>) => Task;
   deleteTask: (id: string) => void;
   markCompleted: (id: string, completedAt?: number) => void;
   reset: () => void;
@@ -19,12 +19,14 @@ export const useTaskStore = create<TaskStore>((set, get) => ({
       tasks: [...tasks].sort((a, b) => b.createdAt - a.createdAt),
     }),
 
-  addTask: (text) => {
+  addTask: (text, options) => {
     const task: Task = {
-      id: createUuid(),
+      id: options?.id ?? createUuid(),
       text,
       completed: false,
-      createdAt: Date.now(),
+      createdAt: options?.createdAt ?? Date.now(),
+      routineId: options?.routineId,
+      taskDate: options?.taskDate,
     };
     const next = [task, ...get().tasks];
     set({ tasks: next });

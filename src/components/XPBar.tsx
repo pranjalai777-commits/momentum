@@ -77,7 +77,7 @@ function XPBar({ xp, xpGained }: XPBarProps) {
   }));
 
   return (
-    <View className="w-full max-w-[320px] gap-[6px]">
+    <View className="w-full gap-[6px]">
       <View className="flex-row justify-between items-center">
         <View className="flex-row items-baseline">
           <Text style={{ fontFamily: FONTS.display, fontSize: 14, color: COLORS.primary }}>LVL {level}</Text>

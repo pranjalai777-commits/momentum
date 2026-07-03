@@ -1,7 +1,7 @@
 import { getDateKey } from "@/lib/momentum";
 import { supabase } from "@/lib/supabase";
 import { useGameStore } from "@/store/useGameStore";
-import type { CompletionType, Task } from "@/types";
+import type { CompletionType, RoutineTask, Task } from "@/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 type CompleteTaskBody = {
@@ -80,7 +80,7 @@ export function useTasksQuery(enabled: boolean) {
 
       const { data, error } = await supabase
         .from("tasks")
-        .select("id,text,completed,completed_at,created_at")
+        .select("id,text,completed,completed_at,created_at,routine_id,task_date")
         .eq("user_id", userId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
@@ -92,6 +92,8 @@ export function useTasksQuery(enabled: boolean) {
         completed: task.completed,
         completedAt: task.completed_at ? Date.parse(task.completed_at) : undefined,
         createdAt: Date.parse(task.created_at),
+        routineId: task.routine_id ?? undefined,
+        taskDate: task.task_date ?? undefined,
       }));
     },
   });
@@ -193,6 +195,8 @@ export function useRemoteMutations() {
           completed_at: task.completedAt ? new Date(task.completedAt).toISOString() : null,
           created_at: new Date(task.createdAt).toISOString(),
           deleted_at: null,
+          routine_id: task.routineId ?? null,
+          task_date: task.taskDate ?? null,
         },
         { onConflict: "id" }
       );
@@ -203,6 +207,53 @@ export function useRemoteMutations() {
   const deleteTaskMutation = useMutation({
     mutationFn: async (taskId: string) => {
       const { error } = await supabase.from("tasks").update({ deleted_at: new Date().toISOString() }).eq("id", taskId);
+      if (error) throw error;
+    },
+  });
+
+  const addRoutineMutation = useMutation({
+    mutationFn: async (routine: RoutineTask) => {
+      const { data: authData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const userId = authData.session?.user.id;
+      if (!userId) throw new Error("No user session for addRoutine");
+
+      const { error } = await supabase.from("routine_tasks").upsert(
+        {
+          id: routine.id,
+          user_id: userId,
+          text: routine.text,
+          active: routine.active,
+          created_at: new Date(routine.createdAt).toISOString(),
+          updated_at: new Date(routine.updatedAt).toISOString(),
+          deleted_at: null,
+        },
+        { onConflict: "id" }
+      );
+      if (error) throw error;
+    },
+  });
+
+  const updateRoutineMutation = useMutation({
+    mutationFn: async (routine: RoutineTask) => {
+      const { error } = await supabase
+        .from("routine_tasks")
+        .update({
+          text: routine.text,
+          active: routine.active,
+          updated_at: new Date(routine.updatedAt).toISOString(),
+        })
+        .eq("id", routine.id);
+      if (error) throw error;
+    },
+  });
+
+  const deleteRoutineMutation = useMutation({
+    mutationFn: async (routineId: string) => {
+      const { error } = await supabase
+        .from("routine_tasks")
+        .update({ active: false, deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq("id", routineId);
       if (error) throw error;
     },
   });
@@ -235,6 +286,9 @@ export function useRemoteMutations() {
     activateTurboRemote: activateTurboMutation.mutateAsync,
     addTaskRemote: addTaskMutation.mutateAsync,
     deleteTaskRemote: deleteTaskMutation.mutateAsync,
+    addRoutineRemote: addRoutineMutation.mutateAsync,
+    updateRoutineRemote: updateRoutineMutation.mutateAsync,
+    deleteRoutineRemote: deleteRoutineMutation.mutateAsync,
     syncTreeHealthRemote: syncTreeHealthMutation.mutateAsync,
   };
 }

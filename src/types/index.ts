@@ -6,6 +6,16 @@ export interface Task {
   completed: boolean;
   completedAt?: number;
   createdAt: number;
+  routineId?: string;
+  taskDate?: string;
+}
+
+export interface RoutineTask {
+  id: string;
+  text: string;
+  active: boolean;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface MomentumData {

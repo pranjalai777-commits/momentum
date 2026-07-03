@@ -1,6 +1,8 @@
-import { createInitialMomentumData, getDateKey } from "@/lib/momentum";
+import { createUuid } from "@/lib/ids";
+import { createInitialMomentumData, getDateKey, getLocalDateIso } from "@/lib/momentum";
 import { supabase } from "@/lib/supabase";
 import { useGameStore } from "@/store/useGameStore";
+import { useRoutineStore } from "@/store/useRoutineStore";
 import { useTaskStore } from "@/store/useTaskStore";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -38,11 +40,21 @@ type DbTask = {
   completed: boolean;
   completed_at: string | null;
   created_at: string;
+  routine_id: string | null;
+  task_date: string | null;
 };
 
 function toDbDate(): string {
-  return new Date().toISOString().slice(0, 10);
+  return getLocalDateIso();
 }
+
+type DbRoutineTask = {
+  id: string;
+  text: string;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+};
 
 export function useSync(enabled: boolean): void {
   const isRunningRef = useRef(false);
@@ -161,21 +173,81 @@ export function useSync(enabled: boolean): void {
       };
       useGameStore.getState().setData(syncedData);
 
+      const routinesResult = await supabase
+        .from("routine_tasks")
+        .select("id,text,active,created_at,updated_at")
+        .eq("user_id", user.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+      if (routinesResult.error) throw routinesResult.error;
+
+      const remoteRoutines = ((routinesResult.data ?? []) as DbRoutineTask[]).map((routine) => ({
+        id: routine.id,
+        text: routine.text,
+        active: routine.active,
+        createdAt: Date.parse(routine.created_at),
+        updatedAt: Date.parse(routine.updated_at),
+      }));
+      useRoutineStore.getState().setRoutines(remoteRoutines);
+
       const tasksResult = await supabase
         .from("tasks")
-        .select("id,text,completed,completed_at,created_at")
+        .select("id,text,completed,completed_at,created_at,routine_id,task_date")
         .eq("user_id", user.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
       if (tasksResult.error) throw tasksResult.error;
 
-      const remoteTasks = (tasksResult.data ?? []).map((task: DbTask) => ({
+      const remoteTasks = ((tasksResult.data ?? []) as DbTask[]).map((task) => ({
         id: task.id,
         text: task.text,
         completed: task.completed,
         completedAt: task.completed_at ? Date.parse(task.completed_at) : undefined,
         createdAt: Date.parse(task.created_at),
+        routineId: task.routine_id ?? undefined,
+        taskDate: task.task_date ?? undefined,
       }));
+
+      const existingRoutineTasksToday = new Set(
+        remoteTasks.filter((task) => task.taskDate === todayDb && task.routineId).map((task) => task.routineId)
+      );
+      const routinesToGenerate = remoteRoutines.filter(
+        (routine) => routine.active && !existingRoutineTasksToday.has(routine.id)
+      );
+
+      if (routinesToGenerate.length > 0) {
+        const now = new Date();
+        const generatedTasks = routinesToGenerate.map((routine) => ({
+          id: createUuid(),
+          user_id: user.id,
+          text: routine.text,
+          completed: false,
+          completed_at: null,
+          created_at: now.toISOString(),
+          deleted_at: null,
+          routine_id: routine.id,
+          task_date: todayDb,
+        }));
+
+        const generatedResult = await supabase.from("tasks").upsert(generatedTasks, {
+          onConflict: "user_id,routine_id,task_date",
+          ignoreDuplicates: false,
+        });
+        if (generatedResult.error) throw generatedResult.error;
+
+        remoteTasks.unshift(
+          ...generatedTasks.map((task) => ({
+            id: task.id,
+            text: task.text,
+            completed: task.completed,
+            completedAt: undefined,
+            createdAt: Date.parse(task.created_at),
+            routineId: task.routine_id,
+            taskDate: task.task_date,
+          }))
+        );
+      }
+
       useTaskStore.getState().setTasks(remoteTasks);
     } finally {
       isRunningRef.current = false;

@@ -6,6 +6,7 @@ import { hapticCancel } from "@/lib/haptics";
 import { supabase } from "@/lib/supabase";
 import { useGameStore } from "@/store/useGameStore";
 import { useNoAdsStore } from "@/store/useNoAdsStore";
+import { useRoutineStore } from "@/store/useRoutineStore";
 import { useTaskStore } from "@/store/useTaskStore";
 import { User, X, LogOut, Trash2, Shield } from "lucide-react-native";
 import { useMemo, useRef, useState, useEffect } from "react";
@@ -41,6 +42,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
   const { user, isAnonymous } = useAuth();
   const resetGameStore = useGameStore((s) => s.reset);
   const resetTaskStore = useTaskStore((s) => s.reset);
+  const resetRoutineStore = useRoutineStore((s) => s.reset);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [deleteInput, setDeleteInput] = useState("");
@@ -86,6 +88,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
   const canShowDeleteAccount = !!user && !isAnonymous;
 
   const cleanupLocalState = () => {
+    resetRoutineStore();
     resetTaskStore();
     resetGameStore();
   };
@@ -272,7 +275,7 @@ export default function ProfileModal({ visible, onClose, onUpgradeAccount }: Pro
                 <>
                   <Text style={{ color: COLORS.foreground, fontFamily: "SpaceGrotesk_700Bold", fontSize: 17 }}>Ads Removed ✨</Text>
                   <Text style={{ color: COLORS.mutedForeground, fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 20 }}>
-                    You're on Momentum Pro — enjoy an ad-free experience forever.
+                    {"You're"} on Momentum Pro — enjoy an ad-free experience forever.
                   </Text>
                 </>
               ) : (

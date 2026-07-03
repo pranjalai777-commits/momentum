@@ -3,7 +3,7 @@ import ScalePressable from "@/components/ui/ScalePressable";
 import { hapticTaskDelete, hapticTaskStart } from "@/lib/haptics";
 import type { Task } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
-import { CheckCircle2, Circle, Trash2, Zap } from "lucide-react-native";
+import { CheckCircle2, Circle, Repeat2, Trash2, Zap } from "lucide-react-native";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 type TaskListProps = {
@@ -63,6 +63,7 @@ function TaskList({ tasks, activeTaskId, onStart, onDelete }: TaskListProps) {
             <Text className="flex-1 text-foreground font-sans text-[14px]" numberOfLines={1} ellipsizeMode="tail">
               {task.text}
             </Text>
+            {task.routineId ? <Repeat2 size={13} color={COLORS.neonCyan} /> : null}
             <Pressable
               onPress={(e) => {
                 e.stopPropagation?.();
@@ -118,6 +119,7 @@ function TaskList({ tasks, activeTaskId, onStart, onDelete }: TaskListProps) {
               >
                 {task.text}
               </Text>
+              {task.routineId ? <Repeat2 size={13} color={COLORS.success} /> : null}
               <Pressable
                 onPress={() => {
                   hapticTaskDelete();
